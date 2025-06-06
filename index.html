@@ -3,64 +3,128 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>aiDashboard mit Verbesserungen</title>
+  <title>aiTODO</title>
   <style>
+    /* Global Variables based on Screenshot */
     :root {
-      --primary-color: #222;
-      --secondary-color: #ff9800;
-      --background-light: #fff;
-      --background-dark: #121212;
-      --text-light: #111;
-      --text-dark: #ddd;
+      --bg-dark: #1a1a1a; /* Overall dark background */
+      --bg-medium-dark: #2a2a2a; /* For cards, inputs */
+      --text-light: #e0e0e0; /* Light text on dark background */
+      --text-medium: #b0b0b0; /* Slightly dimmer text */
+      --accent-purple: #7d40e7; /* Primary accent for logo, active sidebar */
+      --button-blue: #4a90e2; /* Add button color */
       --border-radius: 12px;
-      --shadow: rgba(0, 0, 0, 0.15);
+      --shadow: rgba(0, 0, 0, 0.4);
+
+      /* Filter button colors */
+      --filter-all-bg: #444; /* Grey */
+      --filter-today-bg: #4CAF50; /* Green */
+      --filter-tomorrow-bg: #4A90E2; /* Blue */
+      --filter-overdue-bg: #e53935; /* Red */
+
+      --drag-over-color: rgba(125, 64, 231, 0.2); /* Color for drag-over effect */
     }
 
+    /* Base Styles */
     body {
       margin: 0;
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background: var(--background-light);
+      background: var(--bg-dark);
       color: var(--text-light);
       display: flex;
       height: 100vh;
       overflow: hidden;
-      transition: background 0.3s, color 0.3s;
-    }
-    body.dark {
-      background: var(--background-dark);
-      color: var(--text-dark);
     }
 
+    /* Message Box for Alerts */
+    .message-box {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px); /* Start above screen */
+      background-color: var(--filter-today-bg); /* Green for success */
+      color: white;
+      padding: 15px 25px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.5s ease-in-out;
+      z-index: 1001;
+      font-weight: 600;
+    }
+    .message-box.error {
+      background-color: var(--filter-overdue-bg); /* Red for error */
+    }
+    .message-box.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      visibility: visible;
+    }
+    
     /* Sidebar */
     .sidebar {
-      background: var(--primary-color);
-      color: var(--secondary-color);
-      width: 220px;
-      padding: 20px;
+      background: var(--bg-dark);
+      color: var(--text-medium);
+      width: 250px; /* Slightly wider sidebar as in screenshot */
+      padding: 25px 20px;
       display: flex;
       flex-direction: column;
       box-shadow: 4px 0 10px var(--shadow);
       user-select: none;
+      flex-shrink: 0; /* Prevent shrinking */
     }
-    .sidebar h2 {
-      margin: 0 0 30px;
+    .sidebar .logo {
+      display: flex;
+      align-items: center;
+      margin: 0 0 40px; /* More space below logo */
+      font-size: 24px;
       font-weight: 700;
-      letter-spacing: 2px;
+      color: var(--text-light);
+    }
+    .sidebar .logo .icon {
+      background-color: var(--accent-purple);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-right: 10px;
+      font-size: 20px;
+      color: white; /* Checkmark color */
+      font-weight: bold;
     }
     .sidebar button {
       background: transparent;
       border: none;
-      color: var(--secondary-color);
-      font-size: 18px;
-      padding: 12px 0;
+      color: var(--text-medium);
+      font-size: 17px; /* Slightly smaller font */
+      padding: 14px 15px; /* More padding */
       text-align: left;
       cursor: pointer;
-      border-left: 4px solid transparent;
-      transition: border-color 0.3s;
+      border-radius: 8px; /* Slightly rounded buttons */
+      transition: background-color 0.2s, color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 12px; /* Space between icon and text */
     }
-    .sidebar button.active, .sidebar button:hover {
-      border-left: 4px solid var(--secondary-color);
-      font-weight: 700;
+    .sidebar button:hover {
+      background-color: rgba(255, 255, 255, 0.05); /* Subtle hover */
+      color: var(--text-light);
+    }
+    .sidebar button.active {
+      background-color: var(--bg-medium-dark); /* Active state background */
+      color: var(--text-light);
+      font-weight: 600; /* Slightly bolder */
+    }
+    .sidebar button svg {
+        fill: var(--text-medium);
+        width: 20px;
+        height: 20px;
+    }
+    .sidebar button.active svg {
+        fill: var(--text-light);
     }
 
     /* Dark mode toggle */
@@ -70,13 +134,13 @@
       cursor: pointer;
       background: none;
       border: none;
-      color: var(--secondary-color);
+      color: var(--text-medium);
       padding: 8px 0;
       user-select: none;
       align-self: flex-start;
     }
     .dark-toggle:hover {
-      color: #fff;
+      color: var(--text-light);
     }
 
     /* Main content */
@@ -84,32 +148,32 @@
       flex: 1;
       padding: 25px 40px;
       overflow-y: auto;
-      background: var(--background-light);
-      transition: background 0.3s;
-    }
-    body.dark .main {
-      background: #222;
+      background: var(--bg-dark); /* Match body background */
+      box-sizing: border-box; /* Include padding in width */
     }
 
     h3 {
       margin-top: 0;
+      font-size: 28px;
+      margin-bottom: 25px;
     }
 
     /* Collapsible Form */
     .collapsible-header {
-      background-color: var(--secondary-color);
-      color: white;
-      padding: 10px 15px;
+      background-color: var(--bg-medium-dark);
+      color: var(--text-light);
+      padding: 15px 20px;
       border-radius: var(--border-radius);
       cursor: pointer;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 15px;
+      margin-bottom: 20px; /* More space */
       font-weight: 600;
+      transition: background-color 0.3s;
     }
     .collapsible-header:hover {
-      background-color: #cc7a00;
+      background-color: #3a3a3a; /* Slightly lighter on hover */
     }
     .collapsible-content {
       max-height: 0;
@@ -127,35 +191,36 @@
     form {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      /* margin-bottom: 25px; */ /* Removed margin-bottom here */
+      gap: 15px; /* More space between form elements */
       align-items: center;
+      background-color: var(--bg-medium-dark);
+      padding: 20px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     }
     form label {
       flex-basis: 100%;
       font-weight: 600;
+      color: var(--text-medium);
+      margin-bottom: -8px; /* Pull label closer to input */
     }
-    form input[type="text"], form select, form textarea, form input[type="date"], input[type="file"] {
+    form input[type="text"], 
+    form select, 
+    form textarea, 
+    form input[type="date"], 
+    form input[type="file"] {
       flex-grow: 1;
-      padding: 10px 12px;
+      padding: 12px 15px; /* More padding */
       border-radius: var(--border-radius);
-      border: 1px solid #ccc;
+      border: 1px solid #444; /* Darker border */
       font-size: 16px;
-      transition: border-color 0.3s;
-      background: var(--background-light);
+      background: var(--bg-dark); /* Darker input background */
       color: var(--text-light);
-    }
-    body.dark form input[type="text"], 
-    body.dark form select,
-    body.dark form textarea,
-    body.dark form input[type="date"],
-    body.dark form input[type="file"] {
-      background: #333;
-      border-color: #555;
-      color: var(--text-dark);
+      transition: border-color 0.3s, box-shadow 0.3s;
     }
     form textarea {
       resize: vertical;
+      min-height: 80px;
     }
     form input[type="text"]:focus,
     form select:focus,
@@ -163,26 +228,27 @@
     form input[type="date"]:focus,
     form input[type="file"]:focus {
       outline: none;
-      border-color: var(--secondary-color);
-      box-shadow: 0 0 6px var(--secondary-color);
+      border-color: var(--accent-purple); /* Accent color on focus */
+      box-shadow: 0 0 0 3px rgba(125, 64, 231, 0.3); /* Soft glow */
     }
     .add-btn {
-      background-color: var(--secondary-color);
+      background-color: var(--button-blue); /* Blue button */
       border: none;
-      padding: 10px 20px;
+      padding: 12px 25px;
       color: #fff;
       border-radius: var(--border-radius);
       cursor: pointer;
       font-weight: 600;
+      font-size: 16px;
       transition: background-color 0.3s;
     }
     .add-btn:hover {
-      background-color: #cc7a00;
+      background-color: #3a7bc4; /* Darker blue on hover */
     }
 
     /* Filters and Search */
     .filter-group, .search-group {
-      margin-bottom: 20px;
+      margin-bottom: 30px; /* More space */
       display: flex;
       gap: 10px;
       align-items: center;
@@ -190,24 +256,40 @@
     }
     .filter-group label, .search-group label {
       font-weight: 600;
+      color: var(--text-medium);
       margin-right: 5px;
     }
     .filter-group select, .search-group input {
-      padding: 8px 12px;
+      padding: 10px 15px;
       border-radius: var(--border-radius);
-      border: 1px solid #ccc;
-      font-size: 15px;
-      background: var(--background-light);
+      border: 1px solid #444;
+      font-size: 16px;
+      background: var(--bg-medium-dark);
       color: var(--text-light);
+      flex-grow: 1; /* Allow search input to grow */
     }
-    body.dark .filter-group select, body.dark .search-group input {
-      background: #333;
-      border-color: #555;
-      color: var(--text-dark);
+    .filter-buttons button {
+      background-color: var(--filter-all-bg);
+      color: var(--text-light);
+      border: none;
+      padding: 8px 20px;
+      border-radius: 20px; /* Pill shape */
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.3s;
+      margin-right: 10px;
     }
-    .search-group input {
-      flex-grow: 1;
+    .filter-buttons button:hover {
+      opacity: 0.8;
     }
+    .filter-buttons button.active {
+      font-weight: 700;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+    }
+    #todoFilterToday { background-color: var(--filter-today-bg); }
+    #todoFilterTomorrow { background-color: var(--filter-tomorrow-bg); }
+    #todoFilterOverdue { background-color: var(--filter-overdue-bg); }
+    #todoFilterAll { background-color: var(--filter-all-bg); }
 
     /* ToDo List */
     ul#todo-list, ul#note-list, ul#file-list {
@@ -216,21 +298,14 @@
       margin: 0;
     }
     li.todo-item {
-      background: rgba(255, 152, 0, 0.1);
+      background: var(--bg-medium-dark);
       border-radius: var(--border-radius);
-      padding: 15px 20px;
-      margin-bottom: 15px;
+      padding: 18px 22px; /* More padding */
+      margin-bottom: 18px; /* More space below */
       display: flex;
-      flex-direction: column; /* Changed to column for better layout with meta */
-      justify-content: space-between;
-      align-items: flex-start; /* Changed to flex-start */
-      box-shadow: 0 6px 15px rgba(255, 152, 0, 0.15);
+      flex-direction: column; 
+      box-shadow: 0 6px 15px var(--shadow);
       transition: background-color 0.3s;
-      /* cursor: pointer; */ /* Removed cursor pointer from main item for now, handled by label/buttons */
-    }
-    body.dark li.todo-item {
-      background: rgba(255, 152, 0, 0.15);
-      box-shadow: 0 6px 15px rgba(255, 152, 0, 0.4);
     }
     .todo-main-content {
         display: flex;
@@ -243,14 +318,12 @@
       font-size: 18px;
       user-select: none;
       transition: color 0.3s;
-      cursor: pointer; /* Makes the text itself clickable for modal */
+      cursor: pointer; 
+      word-break: break-word; /* Prevent long words from breaking layout */
     }
     .todo-text.done {
       text-decoration: line-through;
-      color: #666;
-    }
-    body.dark .todo-text.done {
-      color: #888;
+      color: var(--text-medium); /* Dimmmer when done */
     }
     label.todo-label {
       display: flex;
@@ -261,25 +334,40 @@
       flex-grow: 1;
     }
     label.todo-label input[type="checkbox"] {
+      appearance: none; /* Hide default checkbox */
       width: 24px;
       height: 24px;
+      border: 2px solid var(--accent-purple); /* Purple border */
+      border-radius: 6px; /* Slightly rounded square */
       cursor: pointer;
-      accent-color: var(--secondary-color);
-      transition: box-shadow 0.3s;
+      display: grid;
+      place-content: center;
+      transition: background-color 0.2s, border-color 0.2s;
     }
-    label.todo-label input[type="checkbox"]:focus-visible {
-      outline: 3px solid var(--secondary-color);
-      outline-offset: 2px;
+    label.todo-label input[type="checkbox"]::before {
+      content: "✓"; /* Checkmark icon */
+      font-size: 18px;
+      color: white;
+      transform: scale(0);
+      transition: transform 0.2s ease-in-out;
     }
     label.todo-label input[type="checkbox"]:checked {
-      box-shadow: 0 0 8px var(--secondary-color);
+      background-color: var(--accent-purple);
+      border-color: var(--accent-purple);
+    }
+    label.todo-label input[type="checkbox"]:checked::before {
+      transform: scale(1);
+    }
+    label.todo-label input[type="checkbox"]:focus-visible {
+      outline: 3px solid var(--accent-purple);
+      outline-offset: 2px;
     }
 
     /* Priority and Tags */
     .priority-tag, .tag {
       font-weight: 700;
       padding: 5px 12px;
-      border-radius: var(--border-radius);
+      border-radius: 8px; /* Slightly more rounded than default */
       color: #fff;
       text-transform: capitalize;
       user-select: none;
@@ -287,100 +375,90 @@
       min-width: 70px;
       text-align: center;
       white-space: nowrap;
+      font-size: 0.85em;
     }
     .priority-niedrig {
-      background-color: #4caf50;
+      background-color: #4CAF50; /* Green */
       box-shadow: 0 0 6px #4caf5077;
     }
     .priority-mittel {
-      background-color: #ff9800;
-      box-shadow: 0 0 6px #ff9800aa;
+      background-color: #FFC107; /* Yellowish for "Mittel" based on common UI (screenshot "important")*/
+      box-shadow: 0 0 6px #FFC107aa;
     }
     .priority-hoch {
-      background-color: #e53935;
+      background-color: #e53935; /* Red */
       box-shadow: 0 0 8px #e53935bb;
     }
     .tag {
-      background-color: #607d8b;
+      background-color: #607d8b; /* Blue-grey */
       font-size: 0.8em;
       padding: 3px 8px;
       margin-left: 5px;
       box-shadow: 0 0 4px #607d8b77;
     }
+    /* Specific tag for "today" to match screenshot */
+    .tag.today-tag {
+        background-color: #e53935; /* Red for "today" in screenshot */
+        box-shadow: 0 0 6px rgba(229, 57, 53, 0.7);
+    }
     .todo-meta {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 5px;
+      gap: 8px; /* More consistent spacing */
       font-size: 0.9em;
-      color: #777;
-      margin-top: 10px; /* Added margin-top */
-      margin-left: 39px; /* Align with checkbox text */
-    }
-    body.dark .todo-meta {
-      color: #bbb;
+      color: var(--text-medium);
+      margin-top: 10px; 
+      margin-left: 39px; /* Align with text after checkbox */
     }
 
     /* Actions */
-    .todo-actions-buttons button {
-      background: #e53935;
+    .todo-actions-buttons button,
+    .note-item .actions button, 
+    .file-item .actions button {
+      background: var(--filter-overdue-bg); /* Red for delete */
       border: none;
-      border-radius: var(--border-radius);
+      border-radius: 8px; /* More rounded */
       color: #fff;
-      font-weight: 700;
-      padding: 6px 14px;
+      font-weight: 600;
+      padding: 8px 16px; /* More padding */
       cursor: pointer;
       transition: background-color 0.3s;
       user-select: none;
       margin-left: 10px;
+      font-size: 0.9em;
     }
-    .todo-actions-buttons button:hover {
-      background: #b72c28;
+    .todo-actions-buttons button:hover,
+    .note-item .actions button:hover,
+    .file-item .actions button:hover {
+      background: #c02a26; /* Darker red on hover */
     }
     .todo-actions-buttons button.edit-btn {
-      background: #2196f3;
+      background: #2196f3; /* Blue for edit */
     }
     .todo-actions-buttons button.edit-btn:hover {
       background: #1976d2;
     }
-    .note-item .actions button, .file-item .actions button {
-        background: #e53935;
-        border: none;
-        border-radius: var(--border-radius);
-        color: #fff;
-        font-weight: 700;
-        padding: 6px 14px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-        user-select: none;
-        margin-left: 10px;
-    }
-    .note-item .actions button:hover, .file-item .actions button:hover {
-        background: #b72c28;
-    }
 
 
     /* Notizen */
-    li.note-item, li.file-item {
-      background: rgba(255, 255, 255, 0.1);
+    li.note-item, li.file-item, li.folder-item {
+      background: var(--bg-medium-dark);
       padding: 18px 22px;
       border-radius: var(--border-radius);
-      margin-bottom: 15px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+      margin-bottom: 18px;
+      box-shadow: 0 6px 15px var(--shadow);
       position: relative;
       color: inherit;
       cursor: default;
       user-select: text;
       transition: background-color 0.3s;
     }
-    body.dark li.note-item, body.dark li.file-item {
-      background: #333;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.8);
-    }
-    li.note-item h4, li.file-item h4 {
+    li.note-item h4, li.file-item h4, li.folder-item h4 {
       margin-bottom: 8px;
       user-select: text;
       cursor: text;
+      color: var(--text-light);
     }
     li.note-item p, li.file-item pre {
       white-space: pre-wrap;
@@ -388,40 +466,115 @@
       cursor: text;
       margin: 0 0 10px;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text-medium);
     }
     li.file-item pre {
-      background: rgba(0,0,0,0.1);
+      background: var(--bg-dark); /* Darker background for code/preview */
       padding: 12px 15px;
       border-radius: var(--border-radius);
       max-height: 180px;
       overflow-y: auto;
       font-family: monospace;
     }
-    body.dark li.file-item pre {
-      background: #222;
+    .note-item .note-tags, .file-item .file-tags {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
     }
 
     /* Download Button for files */
     .file-download-btn {
-      background: var(--secondary-color);
+      background: var(--button-blue);
       border: none;
-      padding: 6px 12px;
+      padding: 8px 16px;
       border-radius: var(--border-radius);
       cursor: pointer;
       color: #fff;
-      font-weight: 700;
+      font-weight: 600;
       user-select: none;
       transition: background-color 0.3s;
-      margin-left: 10px; /* Adjust margin */
+      margin-left: 10px; 
     }
     .file-download-btn:hover {
-      background: #cc7a00;
+      background: #3a7bc4;
     }
     .file-item .actions {
-        margin-top: 10px;
+        margin-top: 15px;
         display: flex;
         justify-content: flex-end;
     }
+
+    /* Folder Specific Styles */
+    .folder-item {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      font-size: 1.2em;
+      font-weight: 600;
+      color: var(--text-light);
+      /* Add drag-and-drop specific styles */
+      border: 2px solid transparent; /* default border */
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+    .folder-item.drag-over {
+        border-color: var(--accent-purple);
+        background-color: var(--drag-over-color); /* Light purple highlight */
+    }
+    .folder-item:hover {
+        background: rgba(125, 64, 231, 0.1); /* Subtle purple hover */
+    }
+    .folder-item .folder-icon {
+        font-size: 1.5em;
+        color: var(--accent-purple);
+    }
+    .folder-navigation {
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        color: var(--text-medium);
+    }
+    .folder-navigation button {
+        background: var(--bg-medium-dark);
+        color: var(--text-light);
+        padding: 8px 15px;
+        border: none;
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    .folder-navigation button:hover {
+        background: #3a3a3a;
+    }
+    .folder-navigation .breadcrumbs {
+        display: flex;
+        gap: 5px;
+        font-size: 0.9em;
+        color: var(--text-medium);
+        flex-wrap: wrap;
+    }
+    .folder-navigation .breadcrumbs span {
+        cursor: pointer;
+        padding: 2px 5px;
+        border-radius: 5px;
+        transition: background-color 0.2s;
+    }
+    .folder-navigation .breadcrumbs span:hover:not(.current-folder) {
+        background: rgba(255,255,255,0.05);
+    }
+    .folder-navigation .breadcrumbs span.current-folder {
+        font-weight: 700;
+        color: var(--accent-purple);
+    }
+    .file-upload-section {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #3a3a3a;
+    }
+
 
     /* Edit modals */
     #editModal, #todoDetailModal {
@@ -429,66 +582,51 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) scale(0);
-      background: var(--background-light);
+      background: var(--bg-dark);
       color: var(--text-light);
       padding: 25px;
       border-radius: var(--border-radius);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
       width: 90vw;
       max-width: 700px;
       max-height: 85vh;
       overflow-y: auto;
       z-index: 1000;
       transition: transform 0.3s ease;
-    }
-    body.dark #editModal, body.dark #todoDetailModal {
-      background: #222;
-      color: var(--text-dark);
+      border: 1px solid #333; /* Subtle border */
     }
     #editModal.active, #todoDetailModal.active {
       transform: translate(-50%, -50%) scale(1);
     }
     #editModal textarea, #todoDetailModal textarea {
       width: 100%;
-      height: 250px;
+      min-height: 150px; /* Smaller default height */
       font-family: monospace;
       font-size: 16px;
       border-radius: var(--border-radius);
-      border: 1px solid #ccc;
+      border: 1px solid #444;
       padding: 12px 15px;
       resize: vertical;
-      background: var(--background-light);
+      background: var(--bg-medium-dark);
       color: var(--text-light);
-    }
-    body.dark #editModal textarea, body.dark #todoDetailModal textarea {
-      background: #333;
-      border-color: #555;
-      color: var(--text-dark);
     }
     #editModal input[type="text"], #todoDetailModal input[type="text"],
     #todoDetailModal input[type="date"], #todoDetailModal select {
         width: 100%;
-        padding: 10px 12px;
+        padding: 12px 15px;
         border-radius: var(--border-radius);
-        border: 1px solid #ccc;
+        border: 1px solid #444;
         font-size: 16px;
-        background: var(--background-light);
+        background: var(--bg-medium-dark);
         color: var(--text-light);
-        box-sizing: border-box; /* Ensures padding doesn't increase width */
+        box-sizing: border-box; 
     }
-    body.dark #editModal input[type="text"], body.dark #todoDetailModal input[type="text"],
-    body.dark #todoDetailModal input[type="date"], body.dark #todoDetailModal select {
-        background: #333;
-        border-color: #555;
-        color: var(--text-dark);
-    }
-
     #editModal .buttons, #todoDetailModal .buttons {
-      margin-top: 15px;
+      margin-top: 20px;
       text-align: right;
     }
     #editModal button, #todoDetailModal button {
-      background: var(--secondary-color);
+      background: var(--button-blue);
       border: none;
       color: white;
       padding: 10px 22px;
@@ -499,39 +637,32 @@
       transition: background-color 0.3s;
     }
     #editModal button:hover, #todoDetailModal button:hover {
-      background: #cc7a00;
+      background: #3a7bc4;
     }
 
     /* Markdown preview */
     #markdownPreview {
       margin-top: 20px;
-      border: 1px solid #ddd;
+      border: 1px solid #444;
       padding: 15px;
       border-radius: var(--border-radius);
-      background: #f9f9f9;
+      background: var(--bg-medium-dark);
       max-height: 220px;
       overflow-y: auto;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       color: var(--text-light);
     }
-    body.dark #markdownPreview {
-      background: #1e1e1e;
-      border-color: #444;
-      color: var(--text-dark);
-    }
 
     /* Subtasks in Todo Detail Modal */
     .subtasks-section {
-        margin-top: 20px;
-        padding-top: 15px;
-        border-top: 1px solid #eee;
-    }
-    body.dark .subtasks-section {
-        border-top: 1px solid #555;
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid #3a3a3a;
     }
     .subtasks-section h4 {
         margin-top: 0;
         margin-bottom: 15px;
+        color: var(--text-light);
     }
     .subtasks-list {
         list-style: none;
@@ -542,28 +673,23 @@
         align-items: center;
         gap: 10px;
         margin-bottom: 10px;
-        background: rgba(128, 128, 128, 0.1);
+        background: rgba(255, 255, 255, 0.08); /* Lighter grey for subtasks */
         padding: 8px 12px;
         border-radius: var(--border-radius);
     }
-    body.dark .subtask-item {
-        background: rgba(128, 128, 128, 0.2);
-    }
     .subtask-item input[type="checkbox"] {
-        accent-color: var(--secondary-color);
+        accent-color: var(--accent-purple);
         width: 20px;
         height: 20px;
     }
     .subtask-item span {
         flex-grow: 1;
         font-size: 1em;
+        color: var(--text-light);
     }
     .subtask-item span.done {
         text-decoration: line-through;
-        color: #777;
-    }
-    body.dark .subtask-item span.done {
-        color: #999;
+        color: var(--text-medium);
     }
     .subtask-item .subtask-actions button {
         padding: 4px 10px;
@@ -592,7 +718,12 @@
     }
     .subtask-add-form button {
         padding: 8px 15px;
+        background: var(--button-blue);
     }
+    .subtask-add-form button:hover {
+        background: #3a7bc4;
+    }
+
 
     /* Scrollbar styling */
     ::-webkit-scrollbar {
@@ -600,61 +731,142 @@
       height: 8px;
     }
     ::-webkit-scrollbar-thumb {
-      background-color: var(--secondary-color);
+      background-color: var(--accent-purple); /* Scrollbar accent */
       border-radius: var(--border-radius);
     }
     ::-webkit-scrollbar-track {
       background: transparent;
     }
+
+    /* Dashboard Specific Styles */
+    #dashboardContent {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    #dashboardContent > div {
+        background: var(--bg-medium-dark);
+        padding: 20px;
+        border-radius: var(--border-radius);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    #dashboardContent h4 {
+        margin-top: 0;
+        color: var(--accent-purple);
+        font-size: 1.4em;
+        margin-bottom: 15px;
+    }
+    #dashboardContent p {
+        margin-bottom: 8px;
+    }
+    #dashboardContent ul {
+        list-style: none;
+        padding-left: 0;
+        margin-top: 10px;
+    }
+    #dashboardContent li {
+        margin-bottom: 5px;
+        color: var(--text-medium);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
   </style>
 </head>
-<body class="dark">
+<body>
+  <div id="messageBox" class="message-box" role="alert" aria-live="assertive"></div>
+
   <div class="sidebar" role="navigation" aria-label="Seitennavigation">
-    <h2>aiDashboard</h2>
-    <button id="showTodoBtn" class="active" aria-pressed="true" aria-label="ToDo-Liste anzeigen">ToDos</button>
-    <button id="showNotesBtn" aria-pressed="false" aria-label="Notizen anzeigen">Notizen</button>
-    <button id="showFilesBtn" aria-pressed="false" aria-label="Dateien anzeigen">Dateien</button>
+    <div class="logo">
+      <div class="icon">✓</div>
+      mydigital workspace
+    </div>
+    <button id="showTodoBtn" class="active" aria-pressed="true" aria-label="ToDo-Liste anzeigen">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        TODO
+    </button>
+    <button id="showNotesBtn" aria-pressed="false" aria-label="Notizen anzeigen">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 10H8V8h6v2zm0 4H8v-2h6v2zm8-10v16H2V4h20zm-2 2H4v12h16V6zm-5-3L9 1H4v2h4l4 4h7l-3-3z"/></svg>
+        NOTIZ
+    </button>
+    <button id="showFilesBtn" aria-pressed="false" aria-label="Dateien anzeigen">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+        DATEIEN
+    </button>
+    <button id="showDashboardBtn" aria-pressed="false" aria-label="Dashboard anzeigen">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20h4V4h-4v16zm-6 0h4v-8H4v8zm14 0h4V12h-4v8z"/></svg>
+        DASHBOARD
+    </button>
+    <button id="showSearchBtn" aria-pressed="false" aria-label="Suche anzeigen">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        SUCHE
+    </button>
+    
     <button id="toggleDarkMode" class="dark-toggle" aria-label="Dark Mode umschalten" title="Dark Mode umschalten">🌙</button>
   </div>
 
   <main class="main" role="main" aria-live="polite">
-    <section id="globalSearchSection">
+    <section id="globalSearchSection" hidden>
         <div class="search-group">
             <label for="globalSearchInput">Globale Suche:</label>
             <input type="text" id="globalSearchInput" placeholder="Suchen in ToDos, Notizen, Dateien..." />
         </div>
+        <div id="searchResultsTodo" class="search-results-section" style="margin-top: 20px;">
+            <h4>Aufgaben Suchergebnisse</h4>
+            <ul id="search-todo-list" aria-live="polite" aria-relevant="additions removals"></ul>
+        </div>
+        <div id="searchResultsNotes" class="search-results-section" style="margin-top: 20px;">
+            <h4>Notizen Suchergebnisse</h4>
+            <ul id="search-note-list" aria-live="polite" aria-relevant="additions removals"></ul>
+        </div>
+        <div id="searchResultsFiles" class="search-results-section" style="margin-top: 20px;">
+            <h4>Dateien Suchergebnisse</h4>
+            <ul id="search-file-list" aria-live="polite" aria-relevant="additions removals"></ul>
+        </div>
+    </section>
+
+    <section id="dashboardSection" hidden>
+        <h3>Dashboard</h3>
+        <div id="dashboardContent">
+            </div>
     </section>
 
     <section id="todoSection">
-      <h3>ToDo Liste</h3>
+      <h3>Aufgaben</h3>
 
       <div class="collapsible-header" id="todoFormHeader" aria-expanded="false" aria-controls="todoFormContent">
-        Neue ToDo hinzufügen
+        Neue Aufgabe hinzufügen
         <span>&#9660;</span> </div>
 
       <div class="collapsible-content" id="todoFormContent">
         <form id="todoForm" aria-label="Neue ToDo hinzufügen">
-          <label for="todoContent">Neue Aufgabe</label>
+          <label for="todoContent">Was möchtest du tun?</label>
           <input type="text" id="todoContent" name="todoContent" placeholder="Aufgabe eingeben" required />
           
-          <label for="todoPriority">Priorität</label>
-          <select id="todoPriority" name="todoPriority" aria-label="Priorität auswählen">
+          <label for="todoTags">Tags (z.B. heute, wichtig)</label>
+          <input type="text" id="todoTags" name="todoTags" placeholder="Tags (Komma-getrennt)" aria-label="Tags eingeben" />
+
+          <label for="todoDueDate">tt.mm.jjjj</label>
+          <input type="date" id="todoDueDate" name="todoDueDate" aria-label="Fälligkeitsdatum auswählen" />
+
+          <label for="todoPriority" style="display: none;">Priorität</label>
+          <select id="todoPriority" name="todoPriority" aria-label="Priorität auswählen" style="display: none;">
             <option value="niedrig">Niedrig</option>
             <option value="mittel" selected>Mittel</option>
             <option value="hoch">Hoch</option>
           </select>
 
-          <label for="todoDueDate">Fälligkeitsdatum</label>
-          <input type="date" id="todoDueDate" name="todoDueDate" aria-label="Fälligkeitsdatum auswählen" />
-
-          <label for="todoTags">Tags (Komma-getrennt)</label>
-          <input type="text" id="todoTags" name="todoTags" placeholder="z.B. Arbeit, Dringend" aria-label="Tags eingeben" />
-
-          <button type="submit" class="add-btn">Hinzufügen</button>
+          <button type="submit" class="add-btn">Hinzufügen +</button>
         </form>
       </div>
 
-      <div class="filter-group">
+      <div class="filter-group filter-buttons">
+          <button id="todoFilterAll" class="active">Alle</button>
+          <button id="todoFilterToday">Heute</button>
+          <button id="todoFilterTomorrow">Morgen</button>
+          <button id="todoFilterOverdue">Überfällig</button>
+      </div>
+      <div class="filter-group" style="display: none;"> 
           <label for="todoFilterPriority">Filtern nach Priorität:</label>
           <select id="todoFilterPriority">
               <option value="all">Alle</option>
@@ -701,21 +913,37 @@
 
     <section id="filesSection" hidden>
       <h3>Dateien</h3>
+
+      <div class="folder-navigation">
+          <button id="backToParentFolderBtn" hidden>↑ Zurück</button>
+          <div class="breadcrumbs" id="folderBreadcrumbs">Root</div>
+      </div>
+
       <div class="collapsible-header" id="fileFormHeader" aria-expanded="false" aria-controls="fileFormContent">
-        Neue Datei hinzufügen
+        Neue Datei/Ordner hinzufügen
         <span>&#9660;</span>
       </div>
       <div class="collapsible-content" id="fileFormContent">
-        <form id="fileForm" aria-label="Neue Datei hinzufügen">
-          <label for="fileName">Dateiname</label>
-          <input type="text" id="fileName" name="fileName" placeholder="Dateiname eingeben" />
-          <label for="fileContent">Dateiinhalt (optional, wenn keine Datei hochgeladen)</label>
-          <textarea id="fileContent" name="fileContent" placeholder="Dateiinhalt eingeben" rows="5"></textarea>
-          <label for="fileUpload">Oder Datei hochladen</label>
-          <input type="file" id="fileUpload" name="fileUpload" />
-          <label for="fileTags">Tags (Komma-getrennt)</label>
-          <input type="text" id="fileTags" name="fileTags" placeholder="z.B. Dokumente, Bilder" aria-label="Tags eingeben" />
-          <button type="submit" class="add-btn">Datei hinzufügen</button>
+        <form id="fileForm" aria-label="Neue Datei/Ordner hinzufügen">
+            <label for="newFileType">Typ auswählen:</label>
+            <select id="newFileType">
+                <option value="file">Datei</option>
+                <option value="folder">Ordner</option>
+            </select>
+
+            <label for="fileName">Name der Datei/des Ordners</label>
+            <input type="text" id="fileName" name="fileName" placeholder="Name eingeben" required />
+            
+            <div id="fileContentSection">
+                <label for="fileContent">Dateiinhalt (optional, wenn keine Datei hochgeladen)</label>
+                <textarea id="fileContent" name="fileContent" placeholder="Dateiinhalt eingeben" rows="5"></textarea>
+                <label for="fileUpload">Oder Datei hochladen</label>
+                <input type="file" id="fileUpload" name="fileUpload" />
+            </div>
+            
+            <label for="fileTags">Tags (Komma-getrennt)</label>
+            <input type="text" id="fileTags" name="fileTags" placeholder="z.B. Ideen, Bilder" aria-label="Tags eingeben" />
+            <button type="submit" class="add-btn">Hinzufügen</button>
         </form>
       </div>
 
@@ -777,102 +1005,344 @@
 
   <script>
     (() => {
-      // Navigation buttons
+      // --- Global State Variables ---
+      const STORAGE_KEY = 'aiAppData'; 
+      let appData = { 
+        todos: [],
+        notes: [],
+        files: [{ id: 'root', name: 'Root', type: 'folder', parentId: null, tags: [] }] 
+      };
+      let currentFolderId = 'root'; 
+
+      // --- DOM Elements ---
+      const messageBox = document.getElementById('messageBox');
+      const sidebar = document.querySelector('.sidebar');
+      const mainContent = document.querySelector('main');
+      const globalSearchSection = document.getElementById('globalSearchSection');
+
+      // Sidebar Navigation
       const showTodoBtn = document.getElementById('showTodoBtn');
       const showNotesBtn = document.getElementById('showNotesBtn');
       const showFilesBtn = document.getElementById('showFilesBtn');
+      const showDashboardBtn = document.getElementById('showDashboardBtn'); 
+      const showSearchBtn = document.getElementById('showSearchBtn'); 
       const todoSection = document.getElementById('todoSection');
       const notesSection = document.getElementById('notesSection');
       const filesSection = document.getElementById('filesSection');
+      const dashboardSection = document.getElementById('dashboardSection'); 
+      const dashboardContent = document.getElementById('dashboardContent'); 
 
+      // Collapsible Headers
+      const todoFormHeader = document.getElementById('todoFormHeader');
+      const todoFormContent = document.getElementById('todoFormContent');
+      const noteFormHeader = document.getElementById('noteFormHeader');
+      const noteFormContent = document.getElementById('noteFormContent');
+      const fileFormHeader = document.getElementById('fileFormHeader');
+      const fileFormContent = document.getElementById('fileFormContent');
+
+      // Global Search
+      const globalSearchInput = document.getElementById('globalSearchInput');
+      const searchTodoList = document.getElementById('search-todo-list'); // NEU
+      const searchNoteList = document.getElementById('search-note-list'); // NEU
+      const searchFileList = document.getElementById('search-file-list'); // NEU
+
+
+      // ToDo Section Elements
+      const todoForm = document.getElementById('todoForm');
+      const todoList = document.getElementById('todo-list');
+      // Hidden filter inputs (for advanced filtering if needed)
+      const todoFilterPriority = document.getElementById('todoFilterPriority');
+      const todoFilterDueDate = document.getElementById('todoFilterDueDate');
+      const todoFilterTag = document.getElementById('todoFilterTag');
+      // Screenshot-based filter buttons
+      const todoFilterAllBtn = document.getElementById('todoFilterAll');
+      const todoFilterTodayBtn = document.getElementById('todoFilterToday');
+      const todoFilterTomorrowBtn = document.getElementById('todoFilterTomorrow');
+      const todoFilterOverdueBtn = document.getElementById('todoFilterOverdue');
+      let activeTodoFilter = 'all'; // Default active filter
+
+      // Notes Section Elements
+      const noteForm = document.getElementById('noteForm');
+      const noteList = document.getElementById('note-list');
+      const noteFilterTag = document.getElementById('noteFilterTag');
+      const editModal = document.getElementById('editModal');
+      const editNoteTitle = document.getElementById('editNoteTitle');
+      const editNoteContent = document.getElementById('editNoteContent');
+      const editNoteTags = document.getElementById('editNoteTags');
+      const markdownPreview = document.getElementById('markdownPreview');
+      const saveNoteBtn = document.getElementById('saveNoteBtn');
+      const cancelEditBtn = document.getElementById('cancelEditBtn');
+      let editingNoteId = null;
+
+      // Todo Detail Modal Elements
+      const todoDetailModal = document.getElementById('todoDetailModal');
+      const editTodoContent = document.getElementById('editTodoContent');
+      const editTodoPriority = document.getElementById('editTodoPriority');
+      const editTodoDueDate = document.getElementById('editTodoDueDate');
+      const editTodoTags = document.getElementById('editTodoTags');
+      const subtasksList = document.getElementById('subtasks-list');
+      const newSubtaskContent = document.getElementById('newSubtaskContent');
+      const addSubtaskBtn = document.getElementById('addSubtaskBtn');
+      const saveTodoBtn = document.getElementById('saveTodoBtn');
+      const cancelTodoEditBtn = document.getElementById('cancelTodoEditBtn');
+      let editingTodoDetailId = null;
+
+      // Files Section Elements
+      const fileForm = document.getElementById('fileForm');
+      const newFileType = document.getElementById('newFileType');
+      const fileNameInput = document.getElementById('fileName');
+      const fileContentSection = document.getElementById('fileContentSection');
+      const fileContentInput = document.getElementById('fileContent');
+      const fileUploadInput = document.getElementById('fileUpload');
+      const fileTagsInput = document.getElementById('fileTags');
+      const fileList = document.getElementById('file-list');
+      const fileFilterTag = document.getElementById('fileFilterTag');
+      const backToParentFolderBtn = document.getElementById('backToParentFolderBtn');
+      const folderBreadcrumbs = document.getElementById('folderBreadcrumbs');
+
+      // Drag and Drop variables
+      let draggedItemId = null;
+      let draggedItemType = null;
+
+
+      // --- Helper Functions ---
+
+      /**
+       * Displays a temporary message box.
+       * @param {string} message - The message to display.
+       * @param {boolean} isError - True for error message (red background), false for success (green).
+       */
+      function showMessageBox(message, isError = false) {
+          messageBox.textContent = message;
+          messageBox.classList.remove('error');
+          if (isError) {
+              messageBox.classList.add('error');
+          }
+          messageBox.classList.add('show');
+          setTimeout(() => {
+              messageBox.classList.remove('show');
+          }, 3000); // Message disappears after 3 seconds
+      }
+
+      /**
+       * Toggles the visibility and content of collapsible sections.
+       * @param {HTMLElement} header - The header element of the collapsible.
+       * @param {HTMLElement} content - The content element of the collapsible.
+       */
+      function setupCollapsible(header, content) {
+        header.addEventListener('click', () => {
+          const isExpanded = header.getAttribute('aria-expanded') === 'true';
+          header.setAttribute('aria-expanded', !isExpanded);
+          content.classList.toggle('show');
+          header.querySelector('span').textContent = isExpanded ? '▲' : '▼'; // Up/Down arrow
+        });
+      }
+
+      /**
+       * Reads the content of a file as a Base64 string.
+       * @param {File} file - The File object to read.
+       * @returns {Promise<string>} A promise that resolves with the Base64 string.
+       */
+      function readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => resolve(event.target.result);
+          reader.onerror = (error) => reject(error);
+          reader.readAsDataURL(file); // Reads as Base64 data URL
+        });
+      }
+
+      // --- Data Management (Local Storage) ---
+
+      /**
+       * Loads app data from local storage.
+       */
+      function loadAppData() {
+        try {
+          const storedData = localStorage.getItem(STORAGE_KEY);
+          if (storedData) {
+            const parsedData = JSON.parse(storedData);
+            appData.todos = parsedData.todos || [];
+            appData.notes = parsedData.notes || [];
+            if (!parsedData.files || !parsedData.files.some(f => f.id === 'root')) {
+                appData.files = [{ id: 'root', name: 'Root', type: 'folder', parentId: null, tags: [] }];
+            } else {
+                appData.files = parsedData.files;
+            }
+          } else {
+            appData = {
+                todos: [],
+                notes: [],
+                files: [{ id: 'root', name: 'Root', type: 'folder', parentId: null, tags: [] }]
+            };
+          }
+        } catch (e) {
+          console.error("Error loading app data:", e);
+          showMessageBox("Fehler beim Laden der Daten.", true);
+          appData = {
+            todos: [],
+            notes: [],
+            files: [{ id: 'root', name: 'Root', type: 'folder', parentId: null, tags: [] }]
+          };
+        }
+        currentFolderId = 'root'; // Always start in root folder on load
+      }
+
+      /**
+       * Saves app data to local storage.
+       */
+      function saveAppData() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        } catch (e) {
+          console.error("Error saving app data:", e);
+          showMessageBox("Fehler beim Speichern der Daten.", true);
+        }
+      }
+
+      // --- Main App Navigation ---
+
+      /**
+       * Switches the currently visible section in the main content area.
+       * @param {string} sectionToShow - The ID of the section to show ('todo', 'notes', 'files', 'dashboard', 'search').
+       */
       function switchSection(sectionToShow) {
         todoSection.hidden = sectionToShow !== 'todo';
         notesSection.hidden = sectionToShow !== 'notes';
         filesSection.hidden = sectionToShow !== 'files';
+        dashboardSection.hidden = sectionToShow !== 'dashboard'; 
+        globalSearchSection.hidden = sectionToShow !== 'search'; // Macht die Suche-Sektion sichtbar
 
-        showTodoBtn.classList.toggle('active', sectionToShow === 'todo');
-        showNotesBtn.classList.toggle('active', sectionToShow === 'notes');
-        showFilesBtn.classList.toggle('active', sectionToShow === 'files');
+        // Update active class and aria-pressed for sidebar buttons
+        [showTodoBtn, showNotesBtn, showFilesBtn, showDashboardBtn, showSearchBtn].forEach(btn => { 
+            const isActive = btn.id === `show${sectionToShow.charAt(0).toUpperCase() + sectionToShow.slice(1)}Btn`;
+            btn.classList.toggle('active', isActive);
+            btn.setAttribute('aria-pressed', isActive);
+        });
 
-        showTodoBtn.setAttribute('aria-pressed', sectionToShow === 'todo');
-        showNotesBtn.setAttribute('aria-pressed', sectionToShow === 'notes');
-        showFilesBtn.setAttribute('aria-pressed', sectionToShow === 'files');
+        // Re-render content for the activated section
+        if (sectionToShow === 'todo') {
+            renderTodos();
+            // Reset filter buttons if changing sections
+            document.querySelectorAll('.filter-buttons button').forEach(btn => btn.classList.remove('active'));
+            todoFilterAllBtn.classList.add('active');
+            activeTodoFilter = 'all';
+        }
+        else if (sectionToShow === 'notes') renderNotes();
+        else if (sectionToShow === 'files') renderFiles();
+        else if (sectionToShow === 'dashboard') renderDashboard(); 
+        else if (sectionToShow === 'search') {
+            // Beim Wechsel zur Suche-Sektion, führe die Suche sofort aus
+            globalSearchInput.value = ''; // Input leeren
+            filterAllContent(); 
+        }
       }
 
       showTodoBtn.addEventListener('click', () => switchSection('todo'));
       showNotesBtn.addEventListener('click', () => switchSection('notes'));
       showFilesBtn.addEventListener('click', () => switchSection('files'));
+      showDashboardBtn.addEventListener('click', () => switchSection('dashboard')); 
+      showSearchBtn.addEventListener('click', () => switchSection('search'));
 
-      // Dark mode toggle
+      // --- Dark Mode Toggle ---
       const toggleDarkModeBtn = document.getElementById('toggleDarkMode');
       toggleDarkModeBtn.addEventListener('click', () => {
-        document.body.classList.toggle('dark');
-        if (document.body.classList.contains('dark')) {
-          toggleDarkModeBtn.textContent = '☀️';
-          localStorage.setItem('darkMode', 'true');
-        } else {
+        if (toggleDarkModeBtn.textContent === '☀️') {
           toggleDarkModeBtn.textContent = '🌙';
-          localStorage.setItem('darkMode', 'false');
-        }
-      });
-      if (localStorage.getItem('darkMode') === 'true') {
-        document.body.classList.add('dark');
-        toggleDarkModeBtn.textContent = '☀️';
-      }
-
-      // --- Collapsible Logic ---
-      function setupCollapsible(headerId, contentId) {
-        const header = document.getElementById(headerId);
-        const content = document.getElementById(contentId);
-
-        header.addEventListener('click', () => {
-          const isExpanded = header.getAttribute('aria-expanded') === 'true';
-          header.setAttribute('aria-expanded', !isExpanded);
-          content.classList.toggle('show');
-          header.querySelector('span').textContent = isExpanded ? '▼' : '▲';
-        });
-      }
-
-      setupCollapsible('todoFormHeader', 'todoFormContent');
-      setupCollapsible('noteFormHeader', 'noteFormContent');
-      setupCollapsible('fileFormHeader', 'fileFormContent');
-
-
-      // --- Global Search ---
-      const globalSearchInput = document.getElementById('globalSearchInput');
-      globalSearchInput.addEventListener('input', () => {
-          const searchTerm = globalSearchInput.value.toLowerCase();
-          filterTodos(searchTerm);
-          filterNotes(searchTerm);
-          filterFiles(searchTerm);
-      });
-
-      // --- ToDo Section ---
-      const todoForm = document.getElementById('todoForm');
-      const todoList = document.getElementById('todo-list');
-      const todoFilterPriority = document.getElementById('todoFilterPriority');
-      const todoFilterDueDate = document.getElementById('todoFilterDueDate');
-      const todoFilterTag = document.getElementById('todoFilterTag');
-
-      let todos = [];
-
-      function saveTodos() {
-        localStorage.setItem('todos', JSON.stringify(todos));
-      }
-
-      function loadTodos() {
-        const stored = localStorage.getItem('todos');
-        if (stored) {
-          todos = JSON.parse(stored);
         } else {
-          todos = [];
+          toggleDarkModeBtn.textContent = '☀️';
         }
+      });
+
+      // --- Collapsible Logic Setup ---
+      setupCollapsible(todoFormHeader, todoFormContent);
+      setupCollapsible(noteFormHeader, noteFormContent);
+      setupCollapsible(fileFormHeader, fileFormContent);
+
+      // --- Global Search Logic (Updated) ---
+      globalSearchInput.addEventListener('input', () => {
+          filterAllContent(); // Ruft die Filterfunktion auf, wenn sich der Suchinput ändert
+      });
+
+      /**
+       * Filters and renders content across all sections based on the global search term.
+       * Results are displayed in the global search section.
+       */
+      function filterAllContent() {
+          const searchTerm = globalSearchInput.value.toLowerCase().trim();
+
+          // Clear previous search results
+          searchTodoList.innerHTML = '';
+          searchNoteList.innerHTML = '';
+          searchFileList.innerHTML = '';
+
+          if (searchTerm === '') {
+              // Hide search results sections if search term is empty
+              document.getElementById('searchResultsTodo').hidden = true;
+              document.getElementById('searchResultsNotes').hidden = true;
+              document.getElementById('searchResultsFiles').hidden = true;
+              return;
+          }
+
+          // --- Filter ToDos ---
+          const filteredTodos = appData.todos.filter(todo => 
+              todo.content.toLowerCase().includes(searchTerm) ||
+              todo.tags.some(tag => tag.toLowerCase().includes(searchTerm)) ||
+              (todo.subtasks && todo.subtasks.some(sub => sub.content.toLowerCase().includes(searchTerm)))
+          );
+          if (filteredTodos.length > 0) {
+              document.getElementById('searchResultsTodo').hidden = false;
+              filteredTodos.forEach(todo => {
+                  searchTodoList.appendChild(createTodoItem(todo)); // Re-use existing rendering logic
+              });
+          } else {
+              document.getElementById('searchResultsTodo').hidden = true;
+          }
+
+          // --- Filter Notes ---
+          const filteredNotes = appData.notes.filter(note => 
+              note.title.toLowerCase().includes(searchTerm) ||
+              note.content.toLowerCase().includes(searchTerm) ||
+              note.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+          );
+          if (filteredNotes.length > 0) {
+              document.getElementById('searchResultsNotes').hidden = false;
+              filteredNotes.forEach(note => {
+                  searchNoteList.appendChild(createNoteItem(note)); // Re-use existing rendering logic
+              });
+          } else {
+              document.getElementById('searchResultsNotes').hidden = true;
+          }
+
+          // --- Filter Files ---
+          const filteredFiles = appData.files.filter(file => 
+              (file.name.toLowerCase().includes(searchTerm) ||
+              (file.content && file.content.toLowerCase().includes(searchTerm)) ||
+              file.tags.some(tag => tag.toLowerCase().includes(searchTerm))) &&
+              file.id !== 'root' // Do not show root folder in search results
+          );
+          if (filteredFiles.length > 0) {
+              document.getElementById('searchResultsFiles').hidden = false;
+              filteredFiles.forEach(file => {
+                  searchFileList.appendChild(createFileItem(file)); // Re-use existing rendering logic
+              });
+          } else {
+              document.getElementById('searchResultsFiles').hidden = true;
+          }
       }
 
+
+      // --- ToDo Section Functions ---
+
+      /**
+       * Creates an HTML list item for a ToDo.
+       * @param {object} todo - The ToDo object.
+       * @returns {HTMLLIElement} The created list item element.
+       */
       function createTodoItem(todo) {
         const li = document.createElement('li');
         li.className = 'todo-item';
-        li.dataset.id = todo.id; // Store ID on the list item
+        li.dataset.id = todo.id;
 
         const mainContentDiv = document.createElement('div');
         mainContentDiv.className = 'todo-main-content';
@@ -884,13 +1354,13 @@
         checkbox.type = 'checkbox';
         checkbox.checked = todo.done;
         checkbox.setAttribute('aria-label', 'Aufgabe erledigt markieren');
-        checkbox.addEventListener('change', () => toggleTodoDone(todo.id)); // Add listener here
+        checkbox.addEventListener('change', () => toggleTodoDone(todo.id));
 
         const span = document.createElement('span');
         span.className = 'todo-text';
         span.textContent = todo.content;
         if (todo.done) span.classList.add('done');
-        span.addEventListener('click', () => openTodoDetailModal(todo.id)); // Click text to open modal
+        span.addEventListener('click', () => openTodoDetailModal(todo.id));
 
         label.appendChild(checkbox);
         label.appendChild(span);
@@ -903,7 +1373,7 @@
         editBtn.className = 'edit-btn';
         editBtn.setAttribute('aria-label', 'ToDo bearbeiten');
         editBtn.addEventListener('click', (event) => {
-            event.stopPropagation(); // Prevent li click handler from firing
+            event.stopPropagation();
             openTodoDetailModal(todo.id);
         });
         actionsDiv.appendChild(editBtn);
@@ -912,7 +1382,7 @@
         delBtn.textContent = 'Löschen';
         delBtn.setAttribute('aria-label', 'ToDo löschen');
         delBtn.addEventListener('click', (event) => {
-            event.stopPropagation(); // Prevent li click handler from firing
+            event.stopPropagation();
             deleteTodo(todo.id);
         });
         actionsDiv.appendChild(delBtn);
@@ -920,20 +1390,37 @@
         mainContentDiv.appendChild(label);
         mainContentDiv.appendChild(actionsDiv);
 
-
         const metaDiv = document.createElement('div');
         metaDiv.className = 'todo-meta';
 
-        const priorityTag = document.createElement('span');
-        priorityTag.className = 'priority-tag';
-        priorityTag.textContent = todo.priority;
-        priorityTag.classList.add('priority-' + todo.priority);
-        metaDiv.appendChild(priorityTag);
-
+        // Add due date and tags as shown in screenshot
         if (todo.dueDate) {
           const dueDateSpan = document.createElement('span');
-          dueDateSpan.textContent = `Fällig: ${new Date(todo.dueDate).toLocaleDateString('de-DE')}`;
+          const dateObj = new Date(todo.dueDate);
+          const formattedDate = dateObj.toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+          dueDateSpan.textContent = formattedDate; // Format as tt.mm.jjjj
           metaDiv.appendChild(dueDateSpan);
+
+          // Add "today" tag if due today
+          const today = new Date();
+          today.setHours(0,0,0,0); // Normalize to start of day
+          const todoDate = new Date(todo.dueDate);
+          todoDate.setHours(0,0,0,0); // Normalize to start of day
+
+          if (todoDate.getTime() === today.getTime()) {
+              const todayTag = document.createElement('span');
+              todayTag.className = 'tag today-tag'; // Use specific class for "today"
+              todayTag.textContent = 'today';
+              metaDiv.appendChild(todayTag);
+          }
+        }
+        
+        // Add "important" tag based on priority 'hoch' or 'mittel'
+        if (todo.priority === 'hoch' || todo.priority === 'mittel') { // Screenshot has "important" which implies higher priority
+            const importantTag = document.createElement('span');
+            importantTag.className = 'priority-tag priority-mittel'; // Re-use priority-mittel style for "important"
+            importantTag.textContent = 'important';
+            metaDiv.appendChild(importantTag);
         }
 
         todo.tags.forEach(tagText => {
@@ -949,32 +1436,50 @@
         return li;
       }
 
+      /**
+       * Renders the ToDo list based on current filters and search term.
+       * This function is for the *main* ToDo section, not global search.
+       */
       function renderTodos() {
         todoList.innerHTML = '';
-        const searchTerm = globalSearchInput.value.toLowerCase();
-        const filterPriority = todoFilterPriority.value;
-        const filterDate = todoFilterDueDate.value;
-        const filterTag = todoFilterTag.value.toLowerCase();
+        // Only apply internal filters if NOT in global search mode (and global search is active)
+        const inGlobalSearchMode = globalSearchSection.hidden === false && globalSearchInput.value.trim() !== '';
 
-        const filteredTodos = todos.filter(todo => {
-            const matchesSearch = searchTerm === '' ||
-                                  todo.content.toLowerCase().includes(searchTerm) ||
-                                  todo.priority.toLowerCase().includes(searchTerm) ||
-                                  (todo.dueDate && new Date(todo.dueDate).toLocaleDateString('de-DE').toLowerCase().includes(searchTerm)) ||
-                                  todo.tags.some(tag => tag.toLowerCase().includes(searchTerm)) ||
-                                  (todo.subtasks && todo.subtasks.some(sub => sub.content.toLowerCase().includes(searchTerm))); // Search in subtasks
+        const now = new Date();
+        now.setHours(0,0,0,0); // Normalize for comparison
 
-            const matchesPriority = filterPriority === 'all' || todo.priority === filterPriority;
-            const matchesDueDate = !filterDate || todo.dueDate === filterDate;
-            const matchesTag = !filterTag || todo.tags.some(tag => tag.toLowerCase().includes(filterTag));
+        const filteredTodos = appData.todos.filter(todo => {
+            // Do NOT apply global search filter here if global search is active
+            if (inGlobalSearchMode) return true; // Let global search handle the filtering
 
-            // Combined date filter for 'today'
-            const today = new Date().toISOString().slice(0, 10); //YYYY-MM-DD
-            if (filterTag === 'heute' && todo.dueDate !== today) {
-                return false;
+            const todoDueDate = todo.dueDate ? new Date(todo.dueDate) : null;
+            if (todoDueDate) todoDueDate.setHours(0,0,0,0);
+
+            // Apply screenshot-based filter buttons for the main todo section
+            switch (activeTodoFilter) {
+                case 'today':
+                    return todoDueDate && todoDueDate.getTime() === now.getTime() && !todo.done;
+                case 'tomorrow':
+                    const tomorrow = new Date(now);
+                    tomorrow.setDate(now.getDate() + 1);
+                    return todoDueDate && todoDueDate.getTime() === tomorrow.getTime() && !todo.done;
+                case 'overdue':
+                    return todoDueDate && todoDueDate.getTime() < now.getTime() && !todo.done;
+                case 'all':
+                default:
+                    return true;
             }
+        });
 
-            return matchesSearch && matchesPriority && matchesDueDate && matchesTag;
+        // Sort: Incomplete tasks first, then by due date (earliest first), then alphabetical
+        filteredTodos.sort((a, b) => {
+            if (a.done !== b.done) return a.done ? 1 : -1; 
+            
+            const dateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+            const dateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+            if (dateA !== dateB) return dateA - dateB; 
+
+            return a.content.localeCompare(b.content); 
         });
 
         filteredTodos.forEach(todo => {
@@ -982,80 +1487,96 @@
         });
       }
 
-      function filterTodos(searchTerm = '') {
+      /**
+       * Sets the active filter for ToDos and re-renders.
+       * @param {string} filter - 'all', 'today', 'tomorrow', 'overdue'.
+       */
+      function setTodoFilter(filter) {
+          activeTodoFilter = filter;
+          document.querySelectorAll('.filter-buttons button').forEach(btn => btn.classList.remove('active'));
+          document.getElementById(`todoFilter${filter.charAt(0).toUpperCase() + filter.slice(1)}`).classList.add('active');
           renderTodos();
       }
 
+      // Event listeners for screenshot-based filter buttons
+      todoFilterAllBtn.addEventListener('click', () => setTodoFilter('all'));
+      todoFilterTodayBtn.addEventListener('click', () => setTodoFilter('today'));
+      todoFilterTomorrowBtn.addEventListener('click', () => setTodoFilter('tomorrow'));
+      todoFilterOverdueBtn.addEventListener('click', () => setTodoFilter('overdue'));
+
+      /**
+       * Toggles the 'done' status of a ToDo.
+       * @param {string} id - The ID of the ToDo.
+       */
       function toggleTodoDone(id) {
-          const todo = todos.find(t => t.id === id);
+          const todo = appData.todos.find(t => t.id === id);
           if (todo) {
               todo.done = !todo.done;
-              saveTodos();
-              renderTodos(); // Re-render to update UI
+              saveAppData();
+              renderTodos(); 
+              renderDashboard(); 
+              showMessageBox(todo.done ? 'Aufgabe erledigt!' : 'Aufgabe wieder offen.');
           }
       }
 
+      /**
+       * Deletes a ToDo.
+       * @param {string} id - The ID of the ToDo.
+       */
       function deleteTodo(id) {
-          if (confirm('Bist du sicher, dass du diese Aufgabe löschen möchtest?')) {
-              todos = todos.filter(t => t.id !== id);
-              saveTodos();
-              renderTodos();
+          if (!confirm('Bist du sicher, dass du diese Aufgabe löschen möchtest?')) {
+              return;
           }
+          appData.todos = appData.todos.filter(t => t.id !== id);
+          saveAppData();
+          renderTodos();
+          renderDashboard(); 
+          showMessageBox('Aufgabe erfolgreich gelöscht.');
       }
 
       todoForm.addEventListener('submit', e => {
         e.preventDefault();
         const content = todoForm.todoContent.value.trim();
-        if (!content) return;
-        const priority = todoForm.todoPriority.value;
+        if (!content) {
+          showMessageBox('Bitte geben Sie den Inhalt der Aufgabe ein.', true);
+          return;
+        }
+        const priority = todoForm.todoPriority.value || 'mittel'; 
         const dueDate = todoForm.todoDueDate.value;
         const tags = todoForm.todoTags.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
 
         const newTodo = {
-          id: Date.now(),
+          id: Date.now().toString(),
           content,
           priority,
           dueDate,
           tags,
           done: false,
-          subtasks: [] // Initialize with empty subtasks array
+          subtasks: [] 
         };
-        todos.push(newTodo);
-        saveTodos();
+        appData.todos.push(newTodo);
+        saveAppData();
         renderTodos();
+        renderDashboard(); 
         todoForm.reset();
-        document.getElementById('todoFormContent').classList.remove('show');
-        document.getElementById('todoFormHeader').setAttribute('aria-expanded', 'false');
-        document.getElementById('todoFormHeader').querySelector('span').textContent = '▼';
+        todoFormContent.classList.remove('show');
+        todoFormHeader.setAttribute('aria-expanded', 'false');
+        todoFormHeader.querySelector('span').textContent = '▼';
+        showMessageBox('ToDo erfolgreich hinzugefügt!');
       });
 
-      todoFilterPriority.addEventListener('change', renderTodos);
-      todoFilterDueDate.addEventListener('change', renderTodos);
-      todoFilterTag.addEventListener('input', renderTodos);
-
-
-      loadTodos();
-      renderTodos();
 
       // --- Todo Detail Modal (for editing main todo and subtasks) ---
-      const todoDetailModal = document.getElementById('todoDetailModal');
-      const editTodoContent = document.getElementById('editTodoContent');
-      const editTodoPriority = document.getElementById('editTodoPriority');
-      const editTodoDueDate = document.getElementById('editTodoDueDate');
-      const editTodoTags = document.getElementById('editTodoTags');
-      const subtasksList = document.getElementById('subtasks-list');
-      const newSubtaskContent = document.getElementById('newSubtaskContent');
-      const addSubtaskBtn = document.getElementById('addSubtaskBtn');
-      const saveTodoBtn = document.getElementById('saveTodoBtn');
-      const cancelTodoEditBtn = document.getElementById('cancelTodoEditBtn');
 
-      let editingTodoId = null;
-
+      /**
+       * Opens the ToDo detail modal for editing.
+       * @param {string} todoId - The ID of the ToDo to edit.
+       */
       function openTodoDetailModal(todoId) {
-          const todo = todos.find(t => t.id === todoId);
+          const todo = appData.todos.find(t => t.id === todoId);
           if (!todo) return;
 
-          editingTodoId = todoId;
+          editingTodoDetailId = todoId;
           editTodoContent.value = todo.content;
           editTodoPriority.value = todo.priority;
           editTodoDueDate.value = todo.dueDate;
@@ -1067,14 +1588,24 @@
           todoDetailModal.classList.add('active');
       }
 
+      /**
+       * Closes the ToDo detail modal.
+       */
       function closeTodoDetailModal() {
-          editingTodoId = null;
+          editingTodoDetailId = null;
           todoDetailModal.hidden = true;
           todoDetailModal.classList.remove('active');
       }
 
+      /**
+       * Renders the subtasks list within the ToDo detail modal.
+       * @param {Array<object>} subtasks - The array of subtask objects.
+       */
       function renderSubtasks(subtasks) {
           subtasksList.innerHTML = '';
+          if (subtasks.length === 0) {
+              subtasksList.innerHTML = '<p style="color: var(--text-medium); margin-top: 10px;">Noch keine Unteraufgaben.</p>';
+          }
           subtasks.forEach(subtask => {
               const li = document.createElement('li');
               li.className = 'subtask-item';
@@ -1082,7 +1613,7 @@
               const checkbox = document.createElement('input');
               checkbox.type = 'checkbox';
               checkbox.checked = subtask.done;
-              checkbox.addEventListener('change', () => toggleSubtaskDone(subtask.id));
+              checkbox.addEventListener('change', () => toggleSubtaskDoneDetail(subtask.id));
 
               const span = document.createElement('span');
               span.textContent = subtask.content;
@@ -1111,58 +1642,88 @@
           });
       }
 
+      /**
+       * Adds a new subtask to the current editing ToDo.
+       */
       function addSubtask() {
-          if (editingTodoId === null) return;
+          if (editingTodoDetailId === null) return;
           const content = newSubtaskContent.value.trim();
-          if (!content) return;
+          if (!content) {
+            showMessageBox('Bitte geben Sie den Inhalt der Unteraufgabe ein.', true);
+            return;
+          }
 
-          const todo = todos.find(t => t.id === editingTodoId);
+          const todo = appData.todos.find(t => t.id === editingTodoDetailId);
           if (todo) {
               const newSubtask = {
-                  id: Date.now(),
+                  id: Date.now().toString(),
                   content,
                   done: false
               };
               todo.subtasks.push(newSubtask);
-              saveTodos();
+              saveAppData();
               renderSubtasks(todo.subtasks);
               newSubtaskContent.value = '';
+              showMessageBox('Unteraufgabe hinzugefügt.');
           }
       }
 
-      function toggleSubtaskDone(subtaskId) {
-          const todo = todos.find(t => t.id === editingTodoId);
+      /**
+       * Toggles the 'done' status of a subtask within the detail modal.
+       * @param {string} subtaskId - The ID of the subtask.
+       */
+      function toggleSubtaskDoneDetail(subtaskId) {
+          if (editingTodoDetailId === null) return;
+          const todo = appData.todos.find(t => t.id === editingTodoDetailId);
           if (todo) {
               const subtask = todo.subtasks.find(s => s.id === subtaskId);
               if (subtask) {
                   subtask.done = !subtask.done;
-                  saveTodos();
+                  saveAppData();
                   renderSubtasks(todo.subtasks);
+                  showMessageBox(subtask.done ? 'Unteraufgabe erledigt!' : 'Unteraufgabe wieder offen.');
               }
           }
       }
 
+      /**
+       * Edits a subtask's content.
+       * @param {string} subtaskId - The ID of the subtask.
+       */
       function editSubtask(subtaskId) {
-        const todo = todos.find(t => t.id === editingTodoId);
+        if (editingTodoDetailId === null) return;
+        const todo = appData.todos.find(t => t.id === editingTodoDetailId);
         if (todo) {
             const subtask = todo.subtasks.find(s => s.id === subtaskId);
             if (subtask) {
                 const newContent = prompt('Unteraufgabe bearbeiten:', subtask.content);
                 if (newContent !== null && newContent.trim() !== '') {
                     subtask.content = newContent.trim();
-                    saveTodos();
+                    saveAppData();
                     renderSubtasks(todo.subtasks);
+                    showMessageBox('Unteraufgabe aktualisiert.');
+                } else if (newContent !== null) {
+                    showMessageBox('Der Inhalt der Unteraufgabe darf nicht leer sein.', true);
                 }
             }
         }
       }
 
+      /**
+       * Deletes a subtask.
+       * @param {string} subtaskId - The ID of the subtask.
+       */
       function deleteSubtask(subtaskId) {
-          const todo = todos.find(t => t.id === editingTodoId);
+          if (!confirm('Bist du sicher, dass du diese Unteraufgabe löschen möchtest?')) {
+              return;
+          }
+          if (editingTodoDetailId === null) return;
+          const todo = appData.todos.find(t => t.id === editingTodoDetailId);
           if (todo) {
               todo.subtasks = todo.subtasks.filter(s => s.id !== subtaskId);
-              saveTodos();
+              saveAppData();
               renderSubtasks(todo.subtasks);
+              showMessageBox('Unteraufgabe gelöscht.');
           }
       }
 
@@ -1175,42 +1736,35 @@
       });
 
       saveTodoBtn.addEventListener('click', () => {
-          if (editingTodoId === null) return;
-          const todo = todos.find(t => t.id === editingTodoId);
+          if (editingTodoDetailId === null) return;
+          const todo = appData.todos.find(t => t.id === editingTodoDetailId);
           if (todo) {
-              todo.content = editTodoContent.value.trim();
+              const content = editTodoContent.value.trim();
+              if (!content) {
+                showMessageBox('Der Aufgabeninhalt darf nicht leer sein.', true);
+                return;
+              }
+              todo.content = content;
               todo.priority = editTodoPriority.value;
               todo.dueDate = editTodoDueDate.value;
               todo.tags = editTodoTags.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
-              saveTodos();
-              renderTodos(); // Re-render main todo list to reflect changes
+              saveAppData();
+              renderTodos(); 
               closeTodoDetailModal();
+              showMessageBox('ToDo erfolgreich aktualisiert!');
           }
       });
 
       cancelTodoEditBtn.addEventListener('click', closeTodoDetailModal);
 
 
-      // --- Notes Section ---
-      const noteForm = document.getElementById('noteForm');
-      const noteList = document.getElementById('note-list');
-      const noteFilterTag = document.getElementById('noteFilterTag');
+      // --- Notes Section Functions ---
 
-      let notes = [];
-
-      function saveNotes() {
-        localStorage.setItem('notes', JSON.stringify(notes));
-      }
-
-      function loadNotes() {
-        const stored = localStorage.getItem('notes');
-        if (stored) {
-          notes = JSON.parse(stored);
-        } else {
-          notes = [];
-        }
-      }
-
+      /**
+       * Creates an HTML list item for a Note.
+       * @param {object} note - The Note object.
+       * @returns {HTMLLIElement} The created list item element.
+       */
       function createNoteItem(note) {
         const li = document.createElement('li');
         li.className = 'note-item';
@@ -1240,10 +1794,15 @@
         delBtn.textContent = 'Löschen';
         delBtn.setAttribute('aria-label', 'Notiz löschen');
         delBtn.addEventListener('click', (event) => {
-            event.stopPropagation(); // Prevent opening the modal
-            notes = notes.filter(n => n.id !== note.id);
-            saveNotes();
+            event.stopPropagation(); 
+            if (!confirm('Bist du sicher, dass du diese Notiz löschen möchtest?')) {
+                return;
+            }
+            appData.notes = appData.notes.filter(n => n.id !== note.id);
+            saveAppData();
             renderNotes();
+            renderDashboard(); 
+            showMessageBox('Notiz erfolgreich gelöscht.');
         });
         actions.appendChild(delBtn);
 
@@ -1263,20 +1822,21 @@
         return li;
       }
 
+      /**
+       * Renders the Notes list based on current filters and search term.
+       * This function is for the *main* Notes section, not global search.
+       */
       function renderNotes() {
         noteList.innerHTML = '';
-        const searchTerm = globalSearchInput.value.toLowerCase();
+        const inGlobalSearchMode = globalSearchSection.hidden === false && globalSearchInput.value.trim() !== '';
         const filterTag = noteFilterTag.value.toLowerCase();
 
-        const filteredNotes = notes.filter(note => {
-            const matchesSearch = searchTerm === '' ||
-                                  note.title.toLowerCase().includes(searchTerm) ||
-                                  note.content.toLowerCase().includes(searchTerm) ||
-                                  note.tags.some(tag => tag.toLowerCase().includes(searchTerm));
-            
+        const filteredNotes = appData.notes.filter(note => {
+            if (inGlobalSearchMode) return true; // Let global search handle the filtering
+
             const matchesTag = !filterTag || note.tags.some(tag => tag.toLowerCase().includes(filterTag));
             
-            return matchesSearch && matchesTag;
+            return matchesTag;
         });
 
         filteredNotes.forEach(note => {
@@ -1284,50 +1844,43 @@
         });
       }
 
-      function filterNotes(searchTerm = '') {
-          renderNotes();
-      }
-
       noteForm.addEventListener('submit', e => {
         e.preventDefault();
         const title = noteForm.noteTitle.value.trim();
         const content = noteForm.noteContent.value.trim();
-        if (!title || !content) return;
+        if (!title || !content) {
+            showMessageBox('Titel und Inhalt der Notiz dürfen nicht leer sein.', true);
+            return;
+        }
         const tags = noteForm.noteTags.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
 
         const newNote = {
-          id: Date.now(),
+          id: Date.now().toString(),
           title,
           content,
           tags
         };
-        notes.push(newNote);
-        saveNotes();
+        appData.notes.push(newNote);
+        saveAppData();
         renderNotes();
+        renderDashboard(); 
         noteForm.reset();
-        document.getElementById('noteFormContent').classList.remove('show');
-        document.getElementById('noteFormHeader').setAttribute('aria-expanded', 'false');
-        document.getElementById('noteFormHeader').querySelector('span').textContent = '▼';
+        noteFormContent.classList.remove('show');
+        noteFormHeader.setAttribute('aria-expanded', 'false');
+        noteFormHeader.querySelector('span').textContent = '▼';
+        showMessageBox('Notiz erfolgreich gespeichert!');
       });
 
       noteFilterTag.addEventListener('input', renderNotes);
 
-      loadNotes();
-      renderNotes();
-
       // --- Edit Modal for Notes ---
-      const editModal = document.getElementById('editModal');
-      const editNoteTitle = document.getElementById('editNoteTitle');
-      const editNoteContent = document.getElementById('editNoteContent');
-      const editNoteTags = document.getElementById('editNoteTags');
-      const markdownPreview = document.getElementById('markdownPreview');
-      const saveNoteBtn = document.getElementById('saveNoteBtn');
-      const cancelEditBtn = document.getElementById('cancelEditBtn');
 
-      let editingNoteId = null;
-
+      /**
+       * Opens the note editing modal.
+       * @param {string} noteId - The ID of the note to edit.
+       */
       function openEditModal(noteId) {
-        const note = notes.find(n => n.id === noteId);
+        const note = appData.notes.find(n => n.id === noteId);
         if (!note) return;
         editingNoteId = noteId;
         editNoteTitle.value = note.title;
@@ -1338,21 +1891,27 @@
         editModal.classList.add('active');
       }
 
+      /**
+       * Closes the note editing modal.
+       */
       function closeEditModal() {
         editingNoteId = null;
         editModal.hidden = true;
         editModal.classList.remove('active');
       }
 
+      /**
+       * Updates the Markdown preview in the note editing modal.
+       */
       function updateMarkdownPreview() {
         const mdText = editNoteContent.value;
-        // Simple Markdown to HTML conversion for preview
+        // Basic Markdown to HTML conversion
         let html = mdText
           .replace(/^### (.*$)/gim, '<h3>$1</h3>')
           .replace(/^## (.*$)/gim, '<h2>$1</h2>')
           .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-          .replace(/\*\*(.*)\*\*/gim, '<b>$1</b>')
-          .replace(/\*(.*)\*/gim, '<i>$1</i>')
+          .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>') 
+          .replace(/\*(.*)\*/gim, '<em>$1</em>') 
           .replace(/`(.*?)`/gim, '<code>$1</code>')
           .replace(/\n/gim, '<br>');
         markdownPreview.innerHTML = html;
@@ -1365,185 +1924,545 @@
         const title = editNoteTitle.value.trim();
         const content = editNoteContent.value.trim();
         const tags = editNoteTags.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
-        if (!title || !content) return;
-        const note = notes.find(n => n.id === editingNoteId);
+        if (!title || !content) {
+            showMessageBox('Titel und Inhalt der Notiz dürfen nicht leer sein.', true);
+            return;
+        }
+        const note = appData.notes.find(n => n.id === editingNoteId);
         if (!note) return;
         note.title = title;
         note.content = content;
         note.tags = tags;
-        saveNotes();
+        saveAppData();
         renderNotes();
+        renderDashboard(); 
         closeEditModal();
+        showMessageBox('Notiz erfolgreich aktualisiert!');
       });
 
       cancelEditBtn.addEventListener('click', closeEditModal);
 
-      // --- Files Section ---
-      const fileForm = document.getElementById('fileForm');
-      const fileNameInput = document.getElementById('fileName');
-      const fileContentInput = document.getElementById('fileContent');
-      const fileUploadInput = document.getElementById('fileUpload');
-      const fileTagsInput = document.getElementById('fileTags');
-      const fileList = document.getElementById('file-list');
-      const fileFilterTag = document.getElementById('fileFilterTag');
+      // --- Files Section Functions ---
 
-      let files = [];
+      /**
+       * Toggles visibility of file content/upload fields based on selected type.
+       */
+      newFileType.addEventListener('change', () => {
+          if (newFileType.value === 'folder') {
+              fileContentSection.hidden = true;
+              fileContentInput.removeAttribute('required');
+              fileUploadInput.removeAttribute('required');
+          } else {
+              fileContentSection.hidden = false;
+              // For files, either content or upload is required, not both simultaneously
+              fileContentInput.setAttribute('required', 'required'); 
+              fileUploadInput.removeAttribute('required'); // Initially, only text content is "required"
+          }
+      });
+      // Ensure initial state is correct for 'file' type on load
+      newFileType.dispatchEvent(new Event('change'));
 
-      function saveFiles() {
-        localStorage.setItem('files', JSON.stringify(files));
-      }
-
-      function loadFiles() {
-        const stored = localStorage.getItem('files');
-        if (stored) {
-          files = JSON.parse(stored);
-        } else {
-          files = [];
-        }
-      }
-
-      function createFileItem(file) {
+      /**
+       * Creates an HTML list item for a File or Folder.
+       * @param {object} item - The File or Folder object.
+       * @returns {HTMLLIElement} The created list item element.
+       */
+      function createFileItem(item) {
         const li = document.createElement('li');
-        li.className = 'file-item';
-
-        const fileName = document.createElement('strong');
-        fileName.textContent = file.name;
-
-        const fileContentPreview = document.createElement('pre');
-        fileContentPreview.textContent = file.content.length > 200 ? file.content.slice(0, 200) + '...' : file.content;
-
-        const tagsDiv = document.createElement('div');
-        tagsDiv.className = 'file-tags';
-        file.tags.forEach(tagText => {
-            const tagSpan = document.createElement('span');
-            tagSpan.className = 'tag';
-            tagSpan.textContent = tagText;
-            tagsDiv.appendChild(tagSpan);
+        li.dataset.id = item.id;
+        li.draggable = true; // Make items draggable
+        li.addEventListener('dragstart', (e) => {
+            draggedItemId = item.id;
+            draggedItemType = item.type; // Store type (file/folder)
+            e.dataTransfer.setData('text/plain', item.id); // Set data for transfer
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        li.addEventListener('dragend', () => {
+            draggedItemId = null; // Clear on drag end
+            draggedItemType = null;
+            // Remove any drag-over highlights
+            document.querySelectorAll('.folder-item.drag-over').forEach(el => el.classList.remove('drag-over'));
         });
 
-        const downloadBtn = document.createElement('button');
-        downloadBtn.textContent = 'Download';
-        downloadBtn.className = 'file-download-btn';
-        downloadBtn.setAttribute('aria-label', 'Datei herunterladen: ' + file.name);
 
-        downloadBtn.addEventListener('click', () => {
-          const blob = new Blob([file.content], { type: file.type || 'text/plain' }); // Use file.type if available
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = file.name;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(url);
-        });
+        if (item.type === 'folder') {
+            li.className = 'folder-item';
+            li.innerHTML = `
+                <span class="folder-icon">📁</span>
+                <span>${item.name}</span>
+                <div class="actions" style="margin-left: auto;">
+                    <button class="delete-btn">Löschen</button>
+                </div>
+            `;
+            li.addEventListener('click', (e) => {
+                // Prevent folder click from triggering if delete button is clicked
+                if (e.target.classList.contains('delete-btn')) {
+                    return;
+                }
+                enterFolder(item.id, item.name);
+            });
+            li.querySelector('.delete-btn').addEventListener('click', (event) => {
+                event.stopPropagation();
+                if (confirm(`Bist du sicher, dass du den Ordner "${item.name}" und alle seine Inhalte löschen möchtest?`)) {
+                    deleteFileOrFolder(item.id);
+                }
+            });
 
-        const actions = document.createElement('div');
-        actions.className = 'actions';
+            // Add drag-over/drop events for folders
+            li.addEventListener('dragover', (e) => {
+                e.preventDefault(); // Allow drop
+                e.dataTransfer.dropEffect = 'move';
+                // Highlight the folder if it's a valid drop target
+                if (draggedItemId && draggedItemId !== item.id && !isAncestorOf(item.id, draggedItemId)) {
+                    li.classList.add('drag-over');
+                }
+            });
+            li.addEventListener('dragleave', () => {
+                li.classList.remove('drag-over');
+            });
+            li.addEventListener('drop', (e) => {
+                e.preventDefault();
+                li.classList.remove('drag-over');
+                const droppedItemId = e.dataTransfer.getData('text/plain');
+                handleDrop(droppedItemId, item.id); // Pass target folder ID
+            });
 
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Löschen';
-        delBtn.setAttribute('aria-label', 'Datei löschen');
-        delBtn.addEventListener('click', () => {
-            files = files.filter(f => f.id !== file.id);
-            saveFiles();
-            renderFiles();
-        });
-        actions.appendChild(delBtn);
+        } else { // type === 'file'
+            li.className = 'file-item';
+
+            const fileName = document.createElement('strong');
+            fileName.textContent = item.name;
+
+            const fileContentPreview = document.createElement('pre');
+            if (item.type.startsWith('image/')) {
+                fileContentPreview.innerHTML = `<img src="${item.content}" alt="${item.name}" style="max-width:100%; height:auto; display:block; margin:auto;">`; // Show image preview
+            } else {
+                fileContentPreview.textContent = item.content.length > 200 ? item.content.slice(0, 200) + '...' : item.content;
+            }
 
 
-        li.appendChild(fileName);
-        li.appendChild(fileContentPreview);
-        li.appendChild(tagsDiv);
-        li.appendChild(downloadBtn);
-        li.appendChild(actions);
+            const tagsDiv = document.createElement('div');
+            tagsDiv.className = 'file-tags';
+            item.tags.forEach(tagText => {
+                const tagSpan = document.createElement('span');
+                tagSpan.className = 'tag';
+                tagSpan.textContent = tagText;
+                tagsDiv.appendChild(tagSpan);
+            });
+
+            const downloadBtn = document.createElement('button');
+            downloadBtn.textContent = 'Download';
+            downloadBtn.className = 'file-download-btn';
+            downloadBtn.setAttribute('aria-label', 'Datei herunterladen: ' + item.name);
+
+            downloadBtn.addEventListener('click', () => {
+              const blob = item.type.startsWith('image/') ? base64ToBlob(item.content) : new Blob([item.content], { type: item.type || 'text/plain' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = item.name;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              URL.revokeObjectURL(url);
+              showMessageBox('Datei wird heruntergeladen...');
+            });
+
+            const actions = document.createElement('div');
+            actions.className = 'actions';
+
+            const delBtn = document.createElement('button');
+            delBtn.textContent = 'Löschen';
+            delBtn.setAttribute('aria-label', 'Datei löschen');
+            delBtn.addEventListener('click', () => {
+                if (confirm(`Bist du sicher, dass du die Datei "${item.name}" löschen möchtest?`)) {
+                    deleteFileOrFolder(item.id);
+                }
+            });
+            actions.appendChild(delBtn);
+
+            li.appendChild(fileName);
+            li.appendChild(fileContentPreview);
+            li.appendChild(tagsDiv);
+            li.appendChild(downloadBtn);
+            li.appendChild(actions);
+        }
 
         return li;
       }
 
+      /**
+       * Renders the File/Folder list based on the current folder, filters, and search term.
+       * This function is for the *main* Files section, not global search.
+       */
       function renderFiles() {
         fileList.innerHTML = '';
-        const searchTerm = globalSearchInput.value.toLowerCase();
+        const inGlobalSearchMode = globalSearchSection.hidden === false && globalSearchInput.value.trim() !== '';
         const filterTag = fileFilterTag.value.toLowerCase();
 
-        const filteredFiles = files.filter(file => {
-            const matchesSearch = searchTerm === '' ||
-                                  file.name.toLowerCase().includes(searchTerm) ||
-                                  file.content.toLowerCase().includes(searchTerm) ||
-                                  file.tags.some(tag => tag.toLowerCase().includes(searchTerm));
+        // If in global search mode, we don't apply current folder or tag filter here
+        const itemsToRender = inGlobalSearchMode ? appData.files.filter(f => f.id !== 'root') : appData.files.filter(item => item.parentId === currentFolderId);
 
-            const matchesTag = !filterTag || file.tags.some(tag => tag.toLowerCase().includes(filterTag));
+        const filteredFiles = itemsToRender.filter(item => {
+            if (inGlobalSearchMode) return true; // Let global search handle the filtering
+
+            const matchesTag = !filterTag || item.tags.some(tag => tag.toLowerCase().includes(filterTag));
             
-            return matchesSearch && matchesTag;
+            return matchesTag;
         });
 
-        filteredFiles.forEach(file => {
-          fileList.appendChild(createFileItem(file));
+        // Sort folders first, then files, both alphabetically
+        filteredFiles.sort((a, b) => {
+            if (a.type === 'folder' && b.type !== 'folder') return -1;
+            if (a.type !== 'folder' && b.type === 'folder') return 1;
+            return a.name.localeCompare(b.name);
         });
+
+        filteredFiles.forEach(item => {
+          fileList.appendChild(createFileItem(item));
+        });
+
+        updateBreadcrumbs();
+        backToParentFolderBtn.hidden = (currentFolderId === 'root' || !currentFolderId);
+        // Hide folder navigation if in global search section
+        document.querySelector('.folder-navigation').hidden = inGlobalSearchMode;
       }
 
-      function filterFiles(searchTerm = '') {
+      /**
+       * Updates the breadcrumbs navigation for files section.
+       */
+      function updateBreadcrumbs() {
+          folderBreadcrumbs.innerHTML = '';
+          const path = [];
+          let currentId = currentFolderId;
+
+          while (currentId) {
+              const item = appData.files.find(f => f.id === currentId);
+              if (item) {
+                  path.unshift({ id: item.id, name: item.name });
+                  currentId = item.parentId;
+              } else {
+                  path.unshift({ id: 'root', name: 'Root' });
+                  break; 
+              }
+          }
+
+          if (path.length === 0) { 
+            path.push({ id: 'root', name: 'Root' });
+          }
+
+          path.forEach((folder, index) => {
+              const span = document.createElement('span');
+              span.textContent = folder.name;
+              if (index < path.length - 1) {
+                  span.classList.add('clickable');
+                  span.addEventListener('click', () => enterFolder(folder.id, folder.name));
+                  folderBreadcrumbs.appendChild(span);
+                  const separator = document.createElement('span');
+                  separator.textContent = ' / ';
+                  folderBreadcrumbs.appendChild(separator);
+              } else {
+                  span.classList.add('current-folder');
+                  folderBreadcrumbs.appendChild(span);
+              }
+          });
+      }
+
+      /**
+       * Enters a specific folder.
+       * @param {string} folderId - The ID of the folder to enter.
+       */
+      function enterFolder(folderId) {
+          currentFolderId = folderId;
           renderFiles();
+      }
+
+      /**
+       * Navigates up to the parent folder.
+       */
+      function backToParentFolder() {
+          if (!currentFolderId || currentFolderId === 'root') return;
+
+          const currentFolder = appData.files.find(f => f.id === currentFolderId);
+          if (currentFolder && currentFolder.parentId) {
+              currentFolderId = currentFolder.parentId;
+          } else {
+              currentFolderId = 'root'; 
+          }
+          renderFiles();
+      }
+
+      backToParentFolderBtn.addEventListener('click', backToParentFolder);
+
+      /**
+       * Checks if one folder is an ancestor of another.
+       * @param {string} ancestorId - The ID of the potential ancestor folder.
+       * @param {string} descendantId - The ID of the potential descendant item.
+       * @returns {boolean} True if ancestorId is an ancestor of descendantId, false otherwise.
+       */
+      function isAncestorOf(ancestorId, descendantId) {
+          let current = appData.files.find(f => f.id === descendantId);
+          while (current && current.parentId !== null) {
+              if (current.parentId === ancestorId) {
+                  return true;
+              }
+              current = appData.files.find(f => f.id === current.parentId);
+          }
+          return false;
+      }
+
+      /**
+       * Handles the drop event for moving files/folders.
+       * @param {string} droppedItemId - The ID of the item being dragged.
+       * @param {string} targetFolderId - The ID of the folder where the item is dropped.
+       */
+      function handleDrop(droppedItemId, targetFolderId) {
+          const droppedItem = appData.files.find(item => item.id === droppedItemId);
+          const targetFolder = appData.files.find(item => item.id === targetFolderId);
+
+          if (!droppedItem || !targetFolder || targetFolder.type !== 'folder') {
+              showMessageBox('Ungültiges Ablageziel.', true);
+              return;
+          }
+
+          if (droppedItem.id === targetFolder.id) {
+              showMessageBox('Kann nicht in sich selbst verschoben werden.', true);
+              return;
+          }
+
+          // Prevent moving a folder into its own descendant
+          if (droppedItem.type === 'folder' && isAncestorOf(droppedItem.id, targetFolder.id)) {
+              showMessageBox('Ein Ordner kann nicht in einen seiner Unterordner verschoben werden.', true);
+              return;
+          }
+
+          // Check for name conflict in the target folder
+          const nameConflict = appData.files.some(item => 
+              item.parentId === targetFolder.id && 
+              item.name.toLowerCase() === droppedItem.name.toLowerCase() && 
+              item.id !== droppedItem.id
+          );
+          if (nameConflict) {
+              showMessageBox(`Ein Element mit dem Namen "${droppedItem.name}" existiert bereits im Zielordner.`, true);
+              return;
+          }
+
+          droppedItem.parentId = targetFolderId;
+          saveAppData();
+          renderFiles();
+          renderDashboard(); 
+          showMessageBox(`"${droppedItem.name}" wurde nach "${targetFolder.name}" verschoben.`);
+      }
+
+      /**
+       * Deletes a file or folder and its contents.
+       * @param {string} idToDelete - The ID of the item to delete.
+       */
+      function deleteFileOrFolder(idToDelete) {
+          const itemToDelete = appData.files.find(item => item.id === idToDelete);
+          if (!itemToDelete) return;
+
+          if (itemToDelete.type === 'folder') {
+              const childrenToDelete = [];
+              const findChildren = (parentId) => {
+                  appData.files.forEach(item => {
+                      if (item.parentId === parentId) {
+                          childrenToDelete.push(item.id);
+                          if (item.type === 'folder') {
+                              findChildren(item.id);
+                          }
+                      }
+                  });
+              };
+              findChildren(idToDelete);
+              
+              appData.files = appData.files.filter(item => item.id !== idToDelete && !childrenToDelete.includes(item.id));
+              showMessageBox(`Ordner "${itemToDelete.name}" und Inhalte gelöscht.`);
+          } else {
+              appData.files = appData.files.filter(item => item.id !== idToDelete);
+              showMessageBox(`Datei "${itemToDelete.name}" gelöscht.`);
+          }
+          saveAppData();
+          renderFiles();
+          renderDashboard(); 
       }
 
       fileForm.addEventListener('submit', async e => {
         e.preventDefault();
+        const type = newFileType.value;
         const name = fileNameInput.value.trim();
-        const content = fileContentInput.value.trim();
-        const uploadedFile = fileUploadInput.files[0];
         const tags = fileTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
 
-        let fileData = '';
-        let fileType = '';
-
-        if (uploadedFile) {
-            fileData = await readFileContent(uploadedFile);
-            fileType = uploadedFile.type;
-            if (!name) fileNameInput.value = uploadedFile.name; // Use uploaded file's name if no name entered
-        } else if (content) {
-            fileData = content;
-            fileType = 'text/plain';
-        }
-
-        if (!name && !uploadedFile) {
-            alert('Bitte geben Sie einen Dateinamen oder laden Sie eine Datei hoch.');
+        if (!name) {
+            showMessageBox('Bitte geben Sie einen Namen für die Datei/den Ordner ein.', true);
             return;
         }
-        if (!fileData) {
-            alert('Bitte geben Sie Dateiinhalt ein oder laden Sie eine Datei hoch.');
+        if (appData.files.some(item => item.name.toLowerCase() === name.toLowerCase() && item.parentId === currentFolderId)) {
+            showMessageBox('Eine Datei oder ein Ordner mit diesem Namen existiert bereits im aktuellen Ordner.', true);
             return;
         }
 
-        const newFile = {
-          id: Date.now(),
-          name: name || (uploadedFile ? uploadedFile.name : 'Unbenannt'),
-          content: fileData,
-          type: fileType,
-          tags
-        };
-        files.push(newFile);
-        saveFiles();
+        if (type === 'folder') {
+            const newFolder = {
+                id: Date.now().toString(),
+                name,
+                type: 'folder',
+                parentId: currentFolderId,
+                tags
+            };
+            appData.files.push(newFolder);
+            showMessageBox('Ordner erfolgreich erstellt!');
+        } else { // type === 'file'
+            const content = fileContentInput.value;
+            const uploadedFile = fileUploadInput.files[0];
+
+            let fileData = '';
+            let fileMimeType = 'text/plain';
+
+            if (uploadedFile) {
+                fileData = await readFileAsBase64(uploadedFile); 
+                fileMimeType = uploadedFile.type;
+            } else if (content) {
+                fileData = content;
+            } else {
+                showMessageBox('Bitte geben Sie Dateiinhalt ein oder laden Sie eine Datei hoch.', true);
+                return;
+            }
+
+            const newFile = {
+              id: Date.now().toString(),
+              name: name,
+              content: fileData, 
+              type: fileMimeType,
+              parentId: currentFolderId,
+              tags
+            };
+            appData.files.push(newFile);
+            showMessageBox('Datei erfolgreich hinzugefügt!');
+        }
+
+        saveAppData();
         renderFiles();
+        renderDashboard(); 
         fileForm.reset();
-        document.getElementById('fileFormContent').classList.remove('show');
-        document.getElementById('fileFormHeader').setAttribute('aria-expanded', 'false');
-        document.getElementById('fileFormHeader').querySelector('span').textContent = '▼';
+        fileUploadInput.value = ''; 
+        fileContentInput.value = ''; 
+        newFileType.value = 'file'; 
+        newFileType.dispatchEvent(new Event('change')); // Trigger change to show/hide content section
+        fileFormContent.classList.remove('show');
+        fileFormHeader.setAttribute('aria-expanded', 'false');
+        fileFormHeader.querySelector('span').textContent = '▼';
       });
 
       fileFilterTag.addEventListener('input', renderFiles);
 
-      // Helper function to read file content
-      function readFileContent(file) {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (event) => resolve(event.target.result);
-          reader.onerror = (error) => reject(error);
-          reader.readAsText(file); // Reads content as text
-        });
+      // --- Dashboard Section Functions ---
+
+      /**
+       * Renders the dashboard content with various statistics.
+       */
+      function renderDashboard() {
+          dashboardContent.innerHTML = ''; // Clear previous content
+
+          // --- ToDo Statistics ---
+          const totalTodos = appData.todos.length;
+          const completedTodos = appData.todos.filter(todo => todo.done).length;
+          const pendingTodos = totalTodos - completedTodos;
+
+          const now = new Date();
+          now.setHours(0,0,0,0);
+          const todayTodos = appData.todos.filter(todo => {
+              const todoDueDate = todo.dueDate ? new Date(todo.dueDate) : null;
+              return todoDueDate && todoDueDate.getTime() === now.getTime() && !todo.done;
+          }).length;
+          const tomorrow = new Date(now);
+          tomorrow.setDate(now.getDate() + 1);
+          const tomorrowTodos = appData.todos.filter(todo => {
+            const todoDueDate = todo.dueDate ? new Date(todo.dueDate) : null;
+            return todoDueDate && todoDueDate.getTime() === tomorrow.getTime() && !todo.done;
+          }).length;
+          const overdueTodos = appData.todos.filter(todo => {
+              const todoDueDate = todo.dueDate ? new Date(todo.dueDate) : null;
+              return todoDueDate && todoDueDate.getTime() < now.getTime() && !todo.done;
+          }).length;
+
+          let todoDashboardHtml = `
+              <div>
+                  <h4>Aufgaben Übersicht</h4>
+                  <p>Gesamt: <strong>${totalTodos}</strong></p>
+                  <p>Ausstehend: <strong>${pendingTodos}</strong></p>
+                  <p>Erledigt: <strong>${completedTodos}</strong></p>
+                  <p style="color: var(--filter-today-bg);">Heute fällig: <strong>${todayTodos}</strong></p>
+                  <p style="color: var(--filter-tomorrow-bg);">Morgen fällig: <strong>${tomorrowTodos}</strong></p>
+                  <p style="color: var(--filter-overdue-bg);">Überfällig: <strong>${overdueTodos}</strong></p>
+                  <div style="width: 100%; background-color: #555; border-radius: 5px; margin-top: 15px;">
+                      <div style="width: ${totalTodos > 0 ? (completedTodos / totalTodos * 100).toFixed(0) : 0}%; height: 10px; background-color: var(--accent-purple); border-radius: 5px;"></div>
+                  </div>
+                  <small>Erledigt: ${totalTodos > 0 ? (completedTodos / totalTodos * 100).toFixed(0) : 0}%</small>
+              </div>
+          `;
+          dashboardContent.innerHTML += todoDashboardHtml;
+
+          // --- Notes Statistics ---
+          const totalNotes = appData.notes.length;
+          const noteTags = {};
+          appData.notes.forEach(note => {
+              note.tags.forEach(tag => {
+                  noteTags[tag] = (noteTags[tag] || 0) + 1;
+              });
+          });
+
+          let noteDashboardHtml = `
+              <div>
+                  <h4>Notizen Übersicht</h4>
+                  <p>Gesamtnotizen: <strong>${totalNotes}</strong></p>
+                  <h5>Häufigste Tags:</h5>
+                  <ul>
+                      ${Object.entries(noteTags).sort(([,a],[,b]) => b-a).slice(0, 5).map(([tag, count]) => `<li><span class="tag" style="margin-left:0;">${tag}</span> (${count})</li>`).join('')}
+                  </ul>
+              </div>
+          `;
+          dashboardContent.innerHTML += noteDashboardHtml;
+
+          // --- Files Statistics ---
+          const totalFiles = appData.files.filter(f => f.type === 'file').length;
+          const totalFolders = appData.files.filter(f => f.type === 'folder' && f.id !== 'root').length;
+          const fileTypes = {}; 
+          appData.files.filter(f => f.type === 'file').forEach(file => {
+              const type = file.type.split('/')[0]; // e.g., 'image', 'text', 'application'
+              fileTypes[type] = (fileTypes[type] || 0) + 1;
+          });
+
+          let fileDashboardHtml = `
+              <div>
+                  <h4>Dateien Übersicht</h4>
+                  <p>Gesamtdateien: <strong>${totalFiles}</strong></p>
+                  <p>Gesamtordner: <strong>${totalFolders}</strong></p>
+                  <h5>Dateitypen:</h5>
+                  <ul>
+                      ${Object.entries(fileTypes).map(([type, count]) => `<li>${type} (${count})</li>`).join('')}
+                  </ul>
+              </div>
+          `;
+          dashboardContent.innerHTML += fileDashboardHtml;
       }
 
-      loadFiles();
-      renderFiles();
+      // --- Initial Load & Render ---
+
+      /**
+       * Renders all relevant content for the app.
+       */
+      function renderAllContent() {
+        renderTodos();
+        renderNotes();
+        renderFiles();
+        renderDashboard(); 
+      }
+
+      // Initial loading sequence
+      loadAppData();
+      renderAllContent();
+      switchSection('todo'); // Always start with ToDo section
     })();
   </script>
 </body>
