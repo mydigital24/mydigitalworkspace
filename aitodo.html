@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>aiDashboard mit Verbesserungen</title>
+  <style>
+    :root {
+      --primary-color: #222;
+      --secondary-color: #ff9800;
+      --background-light: #fff;
+      --background-dark: #121212;
+      --text-light: #111;
+      --text-dark: #ddd;
+      --border-radius: 12px;
+      --shadow: rgba(0, 0, 0, 0.15);
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--background-light);
+      color: var(--text-light);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark {
+      background: var(--background-dark);
+      color: var(--text-dark);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: var(--primary-color);
+      color: var(--secondary-color);
+      width: 220px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 4px 0 10px var(--shadow);
+      user-select: none;
+    }
+    .sidebar h2 {
+      margin: 0 0 30px;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+    .sidebar button {
+      background: transparent;
+      border: none;
+      color: var(--secondary-color);
+      font-size: 18px;
+      padding: 12px 0;
+      text-align: left;
+      cursor: pointer;
+      border-left: 4px solid transparent;
+      transition: border-color 0.3s;
+    }
+    .sidebar button.active, .sidebar button:hover {
+      border-left: 4px solid var(--secondary-color);
+      font-weight: 700;
+    }
+
+    /* Dark mode toggle */
+    .dark-toggle {
+      margin-top: auto;
+      font-size: 24px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: var(--secondary-color);
+      padding: 8px 0;
+      user-select: none;
+      align-self: flex-start;
+    }
+    .dark-toggle:hover {
+      color: #fff;
+    }
+
+    /* Main content */
+    .main {
+      flex: 1;
+      padding: 25px 40px;
+      overflow-y: auto;
+      background: var(--background-light);
+      transition: background 0.3s;
+    }
+    body.dark .main {
+      background: #222;
+    }
+
+    h3 {
+      margin-top: 0;
+    }
+
+    /* Collapsible Form */
+    .collapsible-header {
+      background-color: var(--secondary-color);
+      color: white;
+      padding: 10px 15px;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+    .collapsible-header:hover {
+      background-color: #cc7a00;
+    }
+    .collapsible-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+      padding: 0 10px;
+      margin-bottom: 15px;
+    }
+    .collapsible-content.show {
+      max-height: 500px; /* Adjust as needed */
+      padding: 15px 10px;
+    }
+
+    /* Forms */
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      /* margin-bottom: 25px; */ /* Removed margin-bottom here */
+      align-items: center;
+    }
+    form label {
+      flex-basis: 100%;
+      font-weight: 600;
+    }
+    form input[type="text"], form select, form textarea, form input[type="date"], input[type="file"] {
+      flex-grow: 1;
+      padding: 10px 12px;
+      border-radius: var(--border-radius);
+      border: 1px solid #ccc;
+      font-size: 16px;
+      transition: border-color 0.3s;
+      background: var(--background-light);
+      color: var(--text-light);
+    }
+    body.dark form input[type="text"], 
+    body.dark form select,
+    body.dark form textarea,
+    body.dark form input[type="date"],
+    body.dark form input[type="file"] {
+      background: #333;
+      border-color: #555;
+      color: var(--text-dark);
+    }
+    form textarea {
+      resize: vertical;
+    }
+    form input[type="text"]:focus,
+    form select:focus,
+    form textarea:focus,
+    form input[type="date"]:focus,
+    form input[type="file"]:focus {
+      outline: none;
+      border-color: var(--secondary-color);
+      box-shadow: 0 0 6px var(--secondary-color);
+    }
+    .add-btn {
+      background-color: var(--secondary-color);
+      border: none;
+      padding: 10px 20px;
+      color: #fff;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.3s;
+    }
+    .add-btn:hover {
+      background-color: #cc7a00;
+    }
+
+    /* Filters and Search */
+    .filter-group, .search-group {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .filter-group label, .search-group label {
+      font-weight: 600;
+      margin-right: 5px;
+    }
+    .filter-group select, .search-group input {
+      padding: 8px 12px;
+      border-radius: var(--border-radius);
+      border: 1px solid #ccc;
+      font-size: 15px;
+      background: var(--background-light);
+      color: var(--text-light);
+    }
+    body.dark .filter-group select, body.dark .search-group input {
+      background: #333;
+      border-color: #555;
+      color: var(--text-dark);
+    }
+    .search-group input {
+      flex-grow: 1;
+    }
+
+    /* ToDo List */
+    ul#todo-list, ul#note-list, ul#file-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    li.todo-item {
+      background: rgba(255, 152, 0, 0.1);
+      border-radius: var(--border-radius);
+      padding: 15px 20px;
+      margin-bottom: 15px;
+      display: flex;
+      flex-direction: column; /* Changed to column for better layout with meta */
+      justify-content: space-between;
+      align-items: flex-start; /* Changed to flex-start */
+      box-shadow: 0 6px 15px rgba(255, 152, 0, 0.15);
+      transition: background-color 0.3s;
+      /* cursor: pointer; */ /* Removed cursor pointer from main item for now, handled by label/buttons */
+    }
+    body.dark li.todo-item {
+      background: rgba(255, 152, 0, 0.15);
+      box-shadow: 0 6px 15px rgba(255, 152, 0, 0.4);
+    }
+    .todo-main-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+    .todo-text {
+      flex-grow: 1;
+      font-size: 18px;
+      user-select: none;
+      transition: color 0.3s;
+      cursor: pointer; /* Makes the text itself clickable for modal */
+    }
+    .todo-text.done {
+      text-decoration: line-through;
+      color: #666;
+    }
+    body.dark .todo-text.done {
+      color: #888;
+    }
+    label.todo-label {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      cursor: pointer;
+      user-select: none;
+      flex-grow: 1;
+    }
+    label.todo-label input[type="checkbox"] {
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      accent-color: var(--secondary-color);
+      transition: box-shadow 0.3s;
+    }
+    label.todo-label input[type="checkbox"]:focus-visible {
+      outline: 3px solid var(--secondary-color);
+      outline-offset: 2px;
+    }
+    label.todo-label input[type="checkbox"]:checked {
+      box-shadow: 0 0 8px var(--secondary-color);
+    }
+
+    /* Priority and Tags */
+    .priority-tag, .tag {
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: var(--border-radius);
+      color: #fff;
+      text-transform: capitalize;
+      user-select: none;
+      margin-left: 10px;
+      min-width: 70px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .priority-niedrig {
+      background-color: #4caf50;
+      box-shadow: 0 0 6px #4caf5077;
+    }
+    .priority-mittel {
+      background-color: #ff9800;
+      box-shadow: 0 0 6px #ff9800aa;
+    }
+    .priority-hoch {
+      background-color: #e53935;
+      box-shadow: 0 0 8px #e53935bb;
+    }
+    .tag {
+      background-color: #607d8b;
+      font-size: 0.8em;
+      padding: 3px 8px;
+      margin-left: 5px;
+      box-shadow: 0 0 4px #607d8b77;
+    }
+    .todo-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.9em;
+      color: #777;
+      margin-top: 10px; /* Added margin-top */
+      margin-left: 39px; /* Align with checkbox text */
+    }
+    body.dark .todo-meta {
+      color: #bbb;
+    }
+
+    /* Actions */
+    .todo-actions-buttons button {
+      background: #e53935;
+      border: none;
+      border-radius: var(--border-radius);
+      color: #fff;
+      font-weight: 700;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      user-select: none;
+      margin-left: 10px;
+    }
+    .todo-actions-buttons button:hover {
+      background: #b72c28;
+    }
+    .todo-actions-buttons button.edit-btn {
+      background: #2196f3;
+    }
+    .todo-actions-buttons button.edit-btn:hover {
+      background: #1976d2;
+    }
+    .note-item .actions button, .file-item .actions button {
+        background: #e53935;
+        border: none;
+        border-radius: var(--border-radius);
+        color: #fff;
+        font-weight: 700;
+        padding: 6px 14px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        user-select: none;
+        margin-left: 10px;
+    }
+    .note-item .actions button:hover, .file-item .actions button:hover {
+        background: #b72c28;
+    }
+
+
+    /* Notizen */
+    li.note-item, li.file-item {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 18px 22px;
+      border-radius: var(--border-radius);
+      margin-bottom: 15px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+      position: relative;
+      color: inherit;
+      cursor: default;
+      user-select: text;
+      transition: background-color 0.3s;
+    }
+    body.dark li.note-item, body.dark li.file-item {
+      background: #333;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.8);
+    }
+    li.note-item h4, li.file-item h4 {
+      margin-bottom: 8px;
+      user-select: text;
+      cursor: text;
+    }
+    li.note-item p, li.file-item pre {
+      white-space: pre-wrap;
+      user-select: text;
+      cursor: text;
+      margin: 0 0 10px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    li.file-item pre {
+      background: rgba(0,0,0,0.1);
+      padding: 12px 15px;
+      border-radius: var(--border-radius);
+      max-height: 180px;
+      overflow-y: auto;
+      font-family: monospace;
+    }
+    body.dark li.file-item pre {
+      background: #222;
+    }
+
+    /* Download Button for files */
+    .file-download-btn {
+      background: var(--secondary-color);
+      border: none;
+      padding: 6px 12px;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      color: #fff;
+      font-weight: 700;
+      user-select: none;
+      transition: background-color 0.3s;
+      margin-left: 10px; /* Adjust margin */
+    }
+    .file-download-btn:hover {
+      background: #cc7a00;
+    }
+    .file-item .actions {
+        margin-top: 10px;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    /* Edit modals */
+    #editModal, #todoDetailModal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      background: var(--background-light);
+      color: var(--text-light);
+      padding: 25px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      width: 90vw;
+      max-width: 700px;
+      max-height: 85vh;
+      overflow-y: auto;
+      z-index: 1000;
+      transition: transform 0.3s ease;
+    }
+    body.dark #editModal, body.dark #todoDetailModal {
+      background: #222;
+      color: var(--text-dark);
+    }
+    #editModal.active, #todoDetailModal.active {
+      transform: translate(-50%, -50%) scale(1);
+    }
+    #editModal textarea, #todoDetailModal textarea {
+      width: 100%;
+      height: 250px;
+      font-family: monospace;
+      font-size: 16px;
+      border-radius: var(--border-radius);
+      border: 1px solid #ccc;
+      padding: 12px 15px;
+      resize: vertical;
+      background: var(--background-light);
+      color: var(--text-light);
+    }
+    body.dark #editModal textarea, body.dark #todoDetailModal textarea {
+      background: #333;
+      border-color: #555;
+      color: var(--text-dark);
+    }
+    #editModal input[type="text"], #todoDetailModal input[type="text"],
+    #todoDetailModal input[type="date"], #todoDetailModal select {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: var(--border-radius);
+        border: 1px solid #ccc;
+        font-size: 16px;
+        background: var(--background-light);
+        color: var(--text-light);
+        box-sizing: border-box; /* Ensures padding doesn't increase width */
+    }
+    body.dark #editModal input[type="text"], body.dark #todoDetailModal input[type="text"],
+    body.dark #todoDetailModal input[type="date"], body.dark #todoDetailModal select {
+        background: #333;
+        border-color: #555;
+        color: var(--text-dark);
+    }
+
+    #editModal .buttons, #todoDetailModal .buttons {
+      margin-top: 15px;
+      text-align: right;
+    }
+    #editModal button, #todoDetailModal button {
+      background: var(--secondary-color);
+      border: none;
+      color: white;
+      padding: 10px 22px;
+      border-radius: var(--border-radius);
+      font-weight: 700;
+      cursor: pointer;
+      margin-left: 12px;
+      transition: background-color 0.3s;
+    }
+    #editModal button:hover, #todoDetailModal button:hover {
+      background: #cc7a00;
+    }
+
+    /* Markdown preview */
+    #markdownPreview {
+      margin-top: 20px;
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: var(--border-radius);
+      background: #f9f9f9;
+      max-height: 220px;
+      overflow-y: auto;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text-light);
+    }
+    body.dark #markdownPreview {
+      background: #1e1e1e;
+      border-color: #444;
+      color: var(--text-dark);
+    }
+
+    /* Subtasks in Todo Detail Modal */
+    .subtasks-section {
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+    }
+    body.dark .subtasks-section {
+        border-top: 1px solid #555;
+    }
+    .subtasks-section h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+    }
+    .subtasks-list {
+        list-style: none;
+        padding: 0;
+    }
+    .subtask-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+        background: rgba(128, 128, 128, 0.1);
+        padding: 8px 12px;
+        border-radius: var(--border-radius);
+    }
+    body.dark .subtask-item {
+        background: rgba(128, 128, 128, 0.2);
+    }
+    .subtask-item input[type="checkbox"] {
+        accent-color: var(--secondary-color);
+        width: 20px;
+        height: 20px;
+    }
+    .subtask-item span {
+        flex-grow: 1;
+        font-size: 1em;
+    }
+    .subtask-item span.done {
+        text-decoration: line-through;
+        color: #777;
+    }
+    body.dark .subtask-item span.done {
+        color: #999;
+    }
+    .subtask-item .subtask-actions button {
+        padding: 4px 10px;
+        margin-left: 5px;
+        font-size: 0.8em;
+    }
+    .subtask-item .subtask-actions button.edit-subtask-btn {
+        background: #2196f3;
+    }
+    .subtask-item .subtask-actions button.edit-subtask-btn:hover {
+        background: #1976d2;
+    }
+    .subtask-item .subtask-actions button.delete-subtask-btn {
+        background: #e53935;
+    }
+    .subtask-item .subtask-actions button.delete-subtask-btn:hover {
+        background: #b72c28;
+    }
+    .subtask-add-form {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+    .subtask-add-form input {
+        flex-grow: 1;
+    }
+    .subtask-add-form button {
+        padding: 8px 15px;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background-color: var(--secondary-color);
+      border-radius: var(--border-radius);
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
+</head>
+<body class="dark">
+  <div class="sidebar" role="navigation" aria-label="Seitennavigation">
+    <h2>aiDashboard</h2>
+    <button id="showTodoBtn" class="active" aria-pressed="true" aria-label="ToDo-Liste anzeigen">ToDos</button>
+    <button id="showNotesBtn" aria-pressed="false" aria-label="Notizen anzeigen">Notizen</button>
+    <button id="showFilesBtn" aria-pressed="false" aria-label="Dateien anzeigen">Dateien</button>
+    <button id="toggleDarkMode" class="dark-toggle" aria-label="Dark Mode umschalten" title="Dark Mode umschalten">🌙</button>
+  </div>
+
+  <main class="main" role="main" aria-live="polite">
+    <section id="globalSearchSection">
+        <div class="search-group">
+            <label for="globalSearchInput">Globale Suche:</label>
+            <input type="text" id="globalSearchInput" placeholder="Suchen in ToDos, Notizen, Dateien..." />
+        </div>
+    </section>
+
+    <section id="todoSection">
+      <h3>ToDo Liste</h3>
+
+      <div class="collapsible-header" id="todoFormHeader" aria-expanded="false" aria-controls="todoFormContent">
+        Neue ToDo hinzufügen
+        <span>&#9660;</span> </div>
+
+      <div class="collapsible-content" id="todoFormContent">
+        <form id="todoForm" aria-label="Neue ToDo hinzufügen">
+          <label for="todoContent">Neue Aufgabe</label>
+          <input type="text" id="todoContent" name="todoContent" placeholder="Aufgabe eingeben" required />
+          
+          <label for="todoPriority">Priorität</label>
+          <select id="todoPriority" name="todoPriority" aria-label="Priorität auswählen">
+            <option value="niedrig">Niedrig</option>
+            <option value="mittel" selected>Mittel</option>
+            <option value="hoch">Hoch</option>
+          </select>
+
+          <label for="todoDueDate">Fälligkeitsdatum</label>
+          <input type="date" id="todoDueDate" name="todoDueDate" aria-label="Fälligkeitsdatum auswählen" />
+
+          <label for="todoTags">Tags (Komma-getrennt)</label>
+          <input type="text" id="todoTags" name="todoTags" placeholder="z.B. Arbeit, Dringend" aria-label="Tags eingeben" />
+
+          <button type="submit" class="add-btn">Hinzufügen</button>
+        </form>
+      </div>
+
+      <div class="filter-group">
+          <label for="todoFilterPriority">Filtern nach Priorität:</label>
+          <select id="todoFilterPriority">
+              <option value="all">Alle</option>
+              <option value="niedrig">Niedrig</option>
+              <option value="mittel">Mittel</option>
+              <option value="hoch">Hoch</option>
+          </select>
+
+          <label for="todoFilterDueDate">Filtern nach Fälligkeitsdatum:</label>
+          <input type="date" id="todoFilterDueDate" />
+
+          <label for="todoFilterTag">Filtern nach Tag:</label>
+          <input type="text" id="todoFilterTag" placeholder="Tag eingeben" />
+      </div>
+
+      <ul id="todo-list" aria-live="polite" aria-relevant="additions removals"></ul>
+    </section>
+
+    <section id="notesSection" hidden>
+      <h3>Notizen</h3>
+      <div class="collapsible-header" id="noteFormHeader" aria-expanded="false" aria-controls="noteFormContent">
+        Neue Notiz hinzufügen
+        <span>&#9660;</span>
+      </div>
+      <div class="collapsible-content" id="noteFormContent">
+        <form id="noteForm" aria-label="Neue Notiz hinzufügen">
+          <label for="noteTitle">Titel</label>
+          <input type="text" id="noteTitle" name="noteTitle" placeholder="Titel eingeben" required />
+          <label for="noteContent">Inhalt (Markdown)</label>
+          <textarea id="noteContent" name="noteContent" placeholder="Notiz eingeben (Markdown unterstützt)" rows="4" required></textarea>
+          <label for="noteTags">Tags (Komma-getrennt)</label>
+          <input type="text" id="noteTags" name="noteTags" placeholder="z.B. Ideen, Projekt X" aria-label="Tags eingeben" />
+          <button type="submit" class="add-btn">Notiz speichern</button>
+        </form>
+      </div>
+
+      <div class="filter-group">
+        <label for="noteFilterTag">Filtern nach Tag:</label>
+        <input type="text" id="noteFilterTag" placeholder="Tag eingeben" />
+      </div>
+
+      <ul id="note-list" aria-live="polite" aria-relevant="additions removals"></ul>
+    </section>
+
+    <section id="filesSection" hidden>
+      <h3>Dateien</h3>
+      <div class="collapsible-header" id="fileFormHeader" aria-expanded="false" aria-controls="fileFormContent">
+        Neue Datei hinzufügen
+        <span>&#9660;</span>
+      </div>
+      <div class="collapsible-content" id="fileFormContent">
+        <form id="fileForm" aria-label="Neue Datei hinzufügen">
+          <label for="fileName">Dateiname</label>
+          <input type="text" id="fileName" name="fileName" placeholder="Dateiname eingeben" />
+          <label for="fileContent">Dateiinhalt (optional, wenn keine Datei hochgeladen)</label>
+          <textarea id="fileContent" name="fileContent" placeholder="Dateiinhalt eingeben" rows="5"></textarea>
+          <label for="fileUpload">Oder Datei hochladen</label>
+          <input type="file" id="fileUpload" name="fileUpload" />
+          <label for="fileTags">Tags (Komma-getrennt)</label>
+          <input type="text" id="fileTags" name="fileTags" placeholder="z.B. Dokumente, Bilder" aria-label="Tags eingeben" />
+          <button type="submit" class="add-btn">Datei hinzufügen</button>
+        </form>
+      </div>
+
+      <div class="filter-group">
+        <label for="fileFilterTag">Filtern nach Tag:</label>
+        <input type="text" id="fileFilterTag" placeholder="Tag eingeben" />
+      </div>
+
+      <ul id="file-list" aria-live="polite" aria-relevant="additions removals"></ul>
+    </section>
+
+    <div id="editModal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle" hidden>
+      <h3 id="editModalTitle">Notiz bearbeiten</h3>
+      <label for="editNoteTitle">Titel</label>
+      <input type="text" id="editNoteTitle" />
+      <label for="editNoteContent">Inhalt (Markdown)</label>
+      <textarea id="editNoteContent" rows="10"></textarea>
+      <label for="editNoteTags">Tags (Komma-getrennt)</label>
+      <input type="text" id="editNoteTags" />
+      <div id="markdownPreview" aria-label="Markdown Vorschau"></div>
+      <div class="buttons">
+        <button id="saveNoteBtn">Speichern</button>
+        <button id="cancelEditBtn">Abbrechen</button>
+      </div>
+    </div>
+
+    <div id="todoDetailModal" role="dialog" aria-modal="true" aria-labelledby="todoDetailModalTitle" hidden>
+        <h3 id="todoDetailModalTitle">ToDo bearbeiten</h3>
+        <label for="editTodoContent">Aufgabe</label>
+        <input type="text" id="editTodoContent" />
+        <label for="editTodoPriority">Priorität</label>
+        <select id="editTodoPriority">
+            <option value="niedrig">Niedrig</option>
+            <option value="mittel">Mittel</option>
+            <option value="hoch">Hoch</option>
+        </select>
+        <label for="editTodoDueDate">Fälligkeitsdatum</label>
+        <input type="date" id="editTodoDueDate" />
+        <label for="editTodoTags">Tags (Komma-getrennt)</label>
+        <input type="text" id="editTodoTags" />
+
+        <div class="subtasks-section">
+            <h4>Unteraufgaben</h4>
+            <ul id="subtasks-list" class="subtasks-list">
+                </ul>
+            <div class="subtask-add-form">
+                <input type="text" id="newSubtaskContent" placeholder="Neue Unteraufgabe eingeben" />
+                <button id="addSubtaskBtn">Hinzufügen</button>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button id="saveTodoBtn">Speichern</button>
+            <button id="cancelTodoEditBtn">Abbrechen</button>
+        </div>
+    </div>
+
+  </main>
+
+  <script>
+    (() => {
+      // Navigation buttons
+      const showTodoBtn = document.getElementById('showTodoBtn');
+      const showNotesBtn = document.getElementById('showNotesBtn');
+      const showFilesBtn = document.getElementById('showFilesBtn');
+      const todoSection = document.getElementById('todoSection');
+      const notesSection = document.getElementById('notesSection');
+      const filesSection = document.getElementById('filesSection');
+
+      function switchSection(sectionToShow) {
+        todoSection.hidden = sectionToShow !== 'todo';
+        notesSection.hidden = sectionToShow !== 'notes';
+        filesSection.hidden = sectionToShow !== 'files';
+
+        showTodoBtn.classList.toggle('active', sectionToShow === 'todo');
+        showNotesBtn.classList.toggle('active', sectionToShow === 'notes');
+        showFilesBtn.classList.toggle('active', sectionToShow === 'files');
+
+        showTodoBtn.setAttribute('aria-pressed', sectionToShow === 'todo');
+        showNotesBtn.setAttribute('aria-pressed', sectionToShow === 'notes');
+        showFilesBtn.setAttribute('aria-pressed', sectionToShow === 'files');
+      }
+
+      showTodoBtn.addEventListener('click', () => switchSection('todo'));
+      showNotesBtn.addEventListener('click', () => switchSection('notes'));
+      showFilesBtn.addEventListener('click', () => switchSection('files'));
+
+      // Dark mode toggle
+      const toggleDarkModeBtn = document.getElementById('toggleDarkMode');
+      toggleDarkModeBtn.addEventListener('click', () => {
+        document.body.classList.toggle('dark');
+        if (document.body.classList.contains('dark')) {
+          toggleDarkModeBtn.textContent = '☀️';
+          localStorage.setItem('darkMode', 'true');
+        } else {
+          toggleDarkModeBtn.textContent = '🌙';
+          localStorage.setItem('darkMode', 'false');
+        }
+      });
+      if (localStorage.getItem('darkMode') === 'true') {
+        document.body.classList.add('dark');
+        toggleDarkModeBtn.textContent = '☀️';
+      }
+
+      // --- Collapsible Logic ---
+      function setupCollapsible(headerId, contentId) {
+        const header = document.getElementById(headerId);
+        const content = document.getElementById(contentId);
+
+        header.addEventListener('click', () => {
+          const isExpanded = header.getAttribute('aria-expanded') === 'true';
+          header.setAttribute('aria-expanded', !isExpanded);
+          content.classList.toggle('show');
+          header.querySelector('span').textContent = isExpanded ? '▼' : '▲';
+        });
+      }
+
+      setupCollapsible('todoFormHeader', 'todoFormContent');
+      setupCollapsible('noteFormHeader', 'noteFormContent');
+      setupCollapsible('fileFormHeader', 'fileFormContent');
+
+
+      // --- Global Search ---
+      const globalSearchInput = document.getElementById('globalSearchInput');
+      globalSearchInput.addEventListener('input', () => {
+          const searchTerm = globalSearchInput.value.toLowerCase();
+          filterTodos(searchTerm);
+          filterNotes(searchTerm);
+          filterFiles(searchTerm);
+      });
+
+      // --- ToDo Section ---
+      const todoForm = document.getElementById('todoForm');
+      const todoList = document.getElementById('todo-list');
+      const todoFilterPriority = document.getElementById('todoFilterPriority');
+      const todoFilterDueDate = document.getElementById('todoFilterDueDate');
+      const todoFilterTag = document.getElementById('todoFilterTag');
+
+      let todos = [];
+
+      function saveTodos() {
+        localStorage.setItem('todos', JSON.stringify(todos));
+      }
+
+      function loadTodos() {
+        const stored = localStorage.getItem('todos');
+        if (stored) {
+          todos = JSON.parse(stored);
+        } else {
+          todos = [];
+        }
+      }
+
+      function createTodoItem(todo) {
+        const li = document.createElement('li');
+        li.className = 'todo-item';
+        li.dataset.id = todo.id; // Store ID on the list item
+
+        const mainContentDiv = document.createElement('div');
+        mainContentDiv.className = 'todo-main-content';
+
+        const label = document.createElement('label');
+        label.className = 'todo-label';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = todo.done;
+        checkbox.setAttribute('aria-label', 'Aufgabe erledigt markieren');
+        checkbox.addEventListener('change', () => toggleTodoDone(todo.id)); // Add listener here
+
+        const span = document.createElement('span');
+        span.className = 'todo-text';
+        span.textContent = todo.content;
+        if (todo.done) span.classList.add('done');
+        span.addEventListener('click', () => openTodoDetailModal(todo.id)); // Click text to open modal
+
+        label.appendChild(checkbox);
+        label.appendChild(span);
+
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'todo-actions-buttons';
+
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Bearbeiten';
+        editBtn.className = 'edit-btn';
+        editBtn.setAttribute('aria-label', 'ToDo bearbeiten');
+        editBtn.addEventListener('click', (event) => {
+            event.stopPropagation(); // Prevent li click handler from firing
+            openTodoDetailModal(todo.id);
+        });
+        actionsDiv.appendChild(editBtn);
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Löschen';
+        delBtn.setAttribute('aria-label', 'ToDo löschen');
+        delBtn.addEventListener('click', (event) => {
+            event.stopPropagation(); // Prevent li click handler from firing
+            deleteTodo(todo.id);
+        });
+        actionsDiv.appendChild(delBtn);
+
+        mainContentDiv.appendChild(label);
+        mainContentDiv.appendChild(actionsDiv);
+
+
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'todo-meta';
+
+        const priorityTag = document.createElement('span');
+        priorityTag.className = 'priority-tag';
+        priorityTag.textContent = todo.priority;
+        priorityTag.classList.add('priority-' + todo.priority);
+        metaDiv.appendChild(priorityTag);
+
+        if (todo.dueDate) {
+          const dueDateSpan = document.createElement('span');
+          dueDateSpan.textContent = `Fällig: ${new Date(todo.dueDate).toLocaleDateString('de-DE')}`;
+          metaDiv.appendChild(dueDateSpan);
+        }
+
+        todo.tags.forEach(tagText => {
+            const tagSpan = document.createElement('span');
+            tagSpan.className = 'tag';
+            tagSpan.textContent = tagText;
+            metaDiv.appendChild(tagSpan);
+        });
+
+        li.appendChild(mainContentDiv);
+        li.appendChild(metaDiv);
+
+        return li;
+      }
+
+      function renderTodos() {
+        todoList.innerHTML = '';
+        const searchTerm = globalSearchInput.value.toLowerCase();
+        const filterPriority = todoFilterPriority.value;
+        const filterDate = todoFilterDueDate.value;
+        const filterTag = todoFilterTag.value.toLowerCase();
+
+        const filteredTodos = todos.filter(todo => {
+            const matchesSearch = searchTerm === '' ||
+                                  todo.content.toLowerCase().includes(searchTerm) ||
+                                  todo.priority.toLowerCase().includes(searchTerm) ||
+                                  (todo.dueDate && new Date(todo.dueDate).toLocaleDateString('de-DE').toLowerCase().includes(searchTerm)) ||
+                                  todo.tags.some(tag => tag.toLowerCase().includes(searchTerm)) ||
+                                  (todo.subtasks && todo.subtasks.some(sub => sub.content.toLowerCase().includes(searchTerm))); // Search in subtasks
+
+            const matchesPriority = filterPriority === 'all' || todo.priority === filterPriority;
+            const matchesDueDate = !filterDate || todo.dueDate === filterDate;
+            const matchesTag = !filterTag || todo.tags.some(tag => tag.toLowerCase().includes(filterTag));
+
+            // Combined date filter for 'today'
+            const today = new Date().toISOString().slice(0, 10); //YYYY-MM-DD
+            if (filterTag === 'heute' && todo.dueDate !== today) {
+                return false;
+            }
+
+            return matchesSearch && matchesPriority && matchesDueDate && matchesTag;
+        });
+
+        filteredTodos.forEach(todo => {
+          todoList.appendChild(createTodoItem(todo));
+        });
+      }
+
+      function filterTodos(searchTerm = '') {
+          renderTodos();
+      }
+
+      function toggleTodoDone(id) {
+          const todo = todos.find(t => t.id === id);
+          if (todo) {
+              todo.done = !todo.done;
+              saveTodos();
+              renderTodos(); // Re-render to update UI
+          }
+      }
+
+      function deleteTodo(id) {
+          if (confirm('Bist du sicher, dass du diese Aufgabe löschen möchtest?')) {
+              todos = todos.filter(t => t.id !== id);
+              saveTodos();
+              renderTodos();
+          }
+      }
+
+      todoForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const content = todoForm.todoContent.value.trim();
+        if (!content) return;
+        const priority = todoForm.todoPriority.value;
+        const dueDate = todoForm.todoDueDate.value;
+        const tags = todoForm.todoTags.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+
+        const newTodo = {
+          id: Date.now(),
+          content,
+          priority,
+          dueDate,
+          tags,
+          done: false,
+          subtasks: [] // Initialize with empty subtasks array
+        };
+        todos.push(newTodo);
+        saveTodos();
+        renderTodos();
+        todoForm.reset();
+        document.getElementById('todoFormContent').classList.remove('show');
+        document.getElementById('todoFormHeader').setAttribute('aria-expanded', 'false');
+        document.getElementById('todoFormHeader').querySelector('span').textContent = '▼';
+      });
+
+      todoFilterPriority.addEventListener('change', renderTodos);
+      todoFilterDueDate.addEventListener('change', renderTodos);
+      todoFilterTag.addEventListener('input', renderTodos);
+
+
+      loadTodos();
+      renderTodos();
+
+      // --- Todo Detail Modal (for editing main todo and subtasks) ---
+      const todoDetailModal = document.getElementById('todoDetailModal');
+      const editTodoContent = document.getElementById('editTodoContent');
+      const editTodoPriority = document.getElementById('editTodoPriority');
+      const editTodoDueDate = document.getElementById('editTodoDueDate');
+      const editTodoTags = document.getElementById('editTodoTags');
+      const subtasksList = document.getElementById('subtasks-list');
+      const newSubtaskContent = document.getElementById('newSubtaskContent');
+      const addSubtaskBtn = document.getElementById('addSubtaskBtn');
+      const saveTodoBtn = document.getElementById('saveTodoBtn');
+      const cancelTodoEditBtn = document.getElementById('cancelTodoEditBtn');
+
+      let editingTodoId = null;
+
+      function openTodoDetailModal(todoId) {
+          const todo = todos.find(t => t.id === todoId);
+          if (!todo) return;
+
+          editingTodoId = todoId;
+          editTodoContent.value = todo.content;
+          editTodoPriority.value = todo.priority;
+          editTodoDueDate.value = todo.dueDate;
+          editTodoTags.value = todo.tags.join(', ');
+
+          renderSubtasks(todo.subtasks);
+
+          todoDetailModal.hidden = false;
+          todoDetailModal.classList.add('active');
+      }
+
+      function closeTodoDetailModal() {
+          editingTodoId = null;
+          todoDetailModal.hidden = true;
+          todoDetailModal.classList.remove('active');
+      }
+
+      function renderSubtasks(subtasks) {
+          subtasksList.innerHTML = '';
+          subtasks.forEach(subtask => {
+              const li = document.createElement('li');
+              li.className = 'subtask-item';
+
+              const checkbox = document.createElement('input');
+              checkbox.type = 'checkbox';
+              checkbox.checked = subtask.done;
+              checkbox.addEventListener('change', () => toggleSubtaskDone(subtask.id));
+
+              const span = document.createElement('span');
+              span.textContent = subtask.content;
+              if (subtask.done) span.classList.add('done');
+
+              const actionsDiv = document.createElement('div');
+              actionsDiv.className = 'subtask-actions';
+
+              const editBtn = document.createElement('button');
+              editBtn.textContent = 'Bearbeiten';
+              editBtn.className = 'edit-subtask-btn';
+              editBtn.addEventListener('click', () => editSubtask(subtask.id));
+
+              const deleteBtn = document.createElement('button');
+              deleteBtn.textContent = 'Löschen';
+              deleteBtn.className = 'delete-subtask-btn';
+              deleteBtn.addEventListener('click', () => deleteSubtask(subtask.id));
+
+              actionsDiv.appendChild(editBtn);
+              actionsDiv.appendChild(deleteBtn);
+
+              li.appendChild(checkbox);
+              li.appendChild(span);
+              li.appendChild(actionsDiv);
+              subtasksList.appendChild(li);
+          });
+      }
+
+      function addSubtask() {
+          if (editingTodoId === null) return;
+          const content = newSubtaskContent.value.trim();
+          if (!content) return;
+
+          const todo = todos.find(t => t.id === editingTodoId);
+          if (todo) {
+              const newSubtask = {
+                  id: Date.now(),
+                  content,
+                  done: false
+              };
+              todo.subtasks.push(newSubtask);
+              saveTodos();
+              renderSubtasks(todo.subtasks);
+              newSubtaskContent.value = '';
+          }
+      }
+
+      function toggleSubtaskDone(subtaskId) {
+          const todo = todos.find(t => t.id === editingTodoId);
+          if (todo) {
+              const subtask = todo.subtasks.find(s => s.id === subtaskId);
+              if (subtask) {
+                  subtask.done = !subtask.done;
+                  saveTodos();
+                  renderSubtasks(todo.subtasks);
+              }
+          }
+      }
+
+      function editSubtask(subtaskId) {
+        const todo = todos.find(t => t.id === editingTodoId);
+        if (todo) {
+            const subtask = todo.subtasks.find(s => s.id === subtaskId);
+            if (subtask) {
+                const newContent = prompt('Unteraufgabe bearbeiten:', subtask.content);
+                if (newContent !== null && newContent.trim() !== '') {
+                    subtask.content = newContent.trim();
+                    saveTodos();
+                    renderSubtasks(todo.subtasks);
+                }
+            }
+        }
+      }
+
+      function deleteSubtask(subtaskId) {
+          const todo = todos.find(t => t.id === editingTodoId);
+          if (todo) {
+              todo.subtasks = todo.subtasks.filter(s => s.id !== subtaskId);
+              saveTodos();
+              renderSubtasks(todo.subtasks);
+          }
+      }
+
+      addSubtaskBtn.addEventListener('click', addSubtask);
+      newSubtaskContent.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+              e.preventDefault();
+              addSubtask();
+          }
+      });
+
+      saveTodoBtn.addEventListener('click', () => {
+          if (editingTodoId === null) return;
+          const todo = todos.find(t => t.id === editingTodoId);
+          if (todo) {
+              todo.content = editTodoContent.value.trim();
+              todo.priority = editTodoPriority.value;
+              todo.dueDate = editTodoDueDate.value;
+              todo.tags = editTodoTags.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+              saveTodos();
+              renderTodos(); // Re-render main todo list to reflect changes
+              closeTodoDetailModal();
+          }
+      });
+
+      cancelTodoEditBtn.addEventListener('click', closeTodoDetailModal);
+
+
+      // --- Notes Section ---
+      const noteForm = document.getElementById('noteForm');
+      const noteList = document.getElementById('note-list');
+      const noteFilterTag = document.getElementById('noteFilterTag');
+
+      let notes = [];
+
+      function saveNotes() {
+        localStorage.setItem('notes', JSON.stringify(notes));
+      }
+
+      function loadNotes() {
+        const stored = localStorage.getItem('notes');
+        if (stored) {
+          notes = JSON.parse(stored);
+        } else {
+          notes = [];
+        }
+      }
+
+      function createNoteItem(note) {
+        const li = document.createElement('li');
+        li.className = 'note-item';
+        li.tabIndex = 0;
+        li.setAttribute('role', 'button');
+        li.setAttribute('aria-label', 'Notiz öffnen: ' + note.title);
+
+        const title = document.createElement('h4');
+        title.textContent = note.title;
+
+        const snippet = document.createElement('p');
+        snippet.textContent = note.content.length > 100 ? note.content.slice(0, 100) + '...' : note.content;
+        
+        const tagsDiv = document.createElement('div');
+        tagsDiv.className = 'note-tags';
+        note.tags.forEach(tagText => {
+            const tagSpan = document.createElement('span');
+            tagSpan.className = 'tag';
+            tagSpan.textContent = tagText;
+            tagsDiv.appendChild(tagSpan);
+        });
+
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Löschen';
+        delBtn.setAttribute('aria-label', 'Notiz löschen');
+        delBtn.addEventListener('click', (event) => {
+            event.stopPropagation(); // Prevent opening the modal
+            notes = notes.filter(n => n.id !== note.id);
+            saveNotes();
+            renderNotes();
+        });
+        actions.appendChild(delBtn);
+
+        li.appendChild(title);
+        li.appendChild(snippet);
+        li.appendChild(tagsDiv);
+        li.appendChild(actions);
+
+        li.addEventListener('click', () => openEditModal(note.id));
+        li.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openEditModal(note.id);
+          }
+        });
+
+        return li;
+      }
+
+      function renderNotes() {
+        noteList.innerHTML = '';
+        const searchTerm = globalSearchInput.value.toLowerCase();
+        const filterTag = noteFilterTag.value.toLowerCase();
+
+        const filteredNotes = notes.filter(note => {
+            const matchesSearch = searchTerm === '' ||
+                                  note.title.toLowerCase().includes(searchTerm) ||
+                                  note.content.toLowerCase().includes(searchTerm) ||
+                                  note.tags.some(tag => tag.toLowerCase().includes(searchTerm));
+            
+            const matchesTag = !filterTag || note.tags.some(tag => tag.toLowerCase().includes(filterTag));
+            
+            return matchesSearch && matchesTag;
+        });
+
+        filteredNotes.forEach(note => {
+          noteList.appendChild(createNoteItem(note));
+        });
+      }
+
+      function filterNotes(searchTerm = '') {
+          renderNotes();
+      }
+
+      noteForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const title = noteForm.noteTitle.value.trim();
+        const content = noteForm.noteContent.value.trim();
+        if (!title || !content) return;
+        const tags = noteForm.noteTags.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+
+        const newNote = {
+          id: Date.now(),
+          title,
+          content,
+          tags
+        };
+        notes.push(newNote);
+        saveNotes();
+        renderNotes();
+        noteForm.reset();
+        document.getElementById('noteFormContent').classList.remove('show');
+        document.getElementById('noteFormHeader').setAttribute('aria-expanded', 'false');
+        document.getElementById('noteFormHeader').querySelector('span').textContent = '▼';
+      });
+
+      noteFilterTag.addEventListener('input', renderNotes);
+
+      loadNotes();
+      renderNotes();
+
+      // --- Edit Modal for Notes ---
+      const editModal = document.getElementById('editModal');
+      const editNoteTitle = document.getElementById('editNoteTitle');
+      const editNoteContent = document.getElementById('editNoteContent');
+      const editNoteTags = document.getElementById('editNoteTags');
+      const markdownPreview = document.getElementById('markdownPreview');
+      const saveNoteBtn = document.getElementById('saveNoteBtn');
+      const cancelEditBtn = document.getElementById('cancelEditBtn');
+
+      let editingNoteId = null;
+
+      function openEditModal(noteId) {
+        const note = notes.find(n => n.id === noteId);
+        if (!note) return;
+        editingNoteId = noteId;
+        editNoteTitle.value = note.title;
+        editNoteContent.value = note.content;
+        editNoteTags.value = note.tags.join(', ');
+        updateMarkdownPreview();
+        editModal.hidden = false;
+        editModal.classList.add('active');
+      }
+
+      function closeEditModal() {
+        editingNoteId = null;
+        editModal.hidden = true;
+        editModal.classList.remove('active');
+      }
+
+      function updateMarkdownPreview() {
+        const mdText = editNoteContent.value;
+        // Simple Markdown to HTML conversion for preview
+        let html = mdText
+          .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+          .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+          .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+          .replace(/\*\*(.*)\*\*/gim, '<b>$1</b>')
+          .replace(/\*(.*)\*/gim, '<i>$1</i>')
+          .replace(/`(.*?)`/gim, '<code>$1</code>')
+          .replace(/\n/gim, '<br>');
+        markdownPreview.innerHTML = html;
+      }
+
+      editNoteContent.addEventListener('input', updateMarkdownPreview);
+
+      saveNoteBtn.addEventListener('click', () => {
+        if (editingNoteId === null) return;
+        const title = editNoteTitle.value.trim();
+        const content = editNoteContent.value.trim();
+        const tags = editNoteTags.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+        if (!title || !content) return;
+        const note = notes.find(n => n.id === editingNoteId);
+        if (!note) return;
+        note.title = title;
+        note.content = content;
+        note.tags = tags;
+        saveNotes();
+        renderNotes();
+        closeEditModal();
+      });
+
+      cancelEditBtn.addEventListener('click', closeEditModal);
+
+      // --- Files Section ---
+      const fileForm = document.getElementById('fileForm');
+      const fileNameInput = document.getElementById('fileName');
+      const fileContentInput = document.getElementById('fileContent');
+      const fileUploadInput = document.getElementById('fileUpload');
+      const fileTagsInput = document.getElementById('fileTags');
+      const fileList = document.getElementById('file-list');
+      const fileFilterTag = document.getElementById('fileFilterTag');
+
+      let files = [];
+
+      function saveFiles() {
+        localStorage.setItem('files', JSON.stringify(files));
+      }
+
+      function loadFiles() {
+        const stored = localStorage.getItem('files');
+        if (stored) {
+          files = JSON.parse(stored);
+        } else {
+          files = [];
+        }
+      }
+
+      function createFileItem(file) {
+        const li = document.createElement('li');
+        li.className = 'file-item';
+
+        const fileName = document.createElement('strong');
+        fileName.textContent = file.name;
+
+        const fileContentPreview = document.createElement('pre');
+        fileContentPreview.textContent = file.content.length > 200 ? file.content.slice(0, 200) + '...' : file.content;
+
+        const tagsDiv = document.createElement('div');
+        tagsDiv.className = 'file-tags';
+        file.tags.forEach(tagText => {
+            const tagSpan = document.createElement('span');
+            tagSpan.className = 'tag';
+            tagSpan.textContent = tagText;
+            tagsDiv.appendChild(tagSpan);
+        });
+
+        const downloadBtn = document.createElement('button');
+        downloadBtn.textContent = 'Download';
+        downloadBtn.className = 'file-download-btn';
+        downloadBtn.setAttribute('aria-label', 'Datei herunterladen: ' + file.name);
+
+        downloadBtn.addEventListener('click', () => {
+          const blob = new Blob([file.content], { type: file.type || 'text/plain' }); // Use file.type if available
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = file.name;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        });
+
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Löschen';
+        delBtn.setAttribute('aria-label', 'Datei löschen');
+        delBtn.addEventListener('click', () => {
+            files = files.filter(f => f.id !== file.id);
+            saveFiles();
+            renderFiles();
+        });
+        actions.appendChild(delBtn);
+
+
+        li.appendChild(fileName);
+        li.appendChild(fileContentPreview);
+        li.appendChild(tagsDiv);
+        li.appendChild(downloadBtn);
+        li.appendChild(actions);
+
+        return li;
+      }
+
+      function renderFiles() {
+        fileList.innerHTML = '';
+        const searchTerm = globalSearchInput.value.toLowerCase();
+        const filterTag = fileFilterTag.value.toLowerCase();
+
+        const filteredFiles = files.filter(file => {
+            const matchesSearch = searchTerm === '' ||
+                                  file.name.toLowerCase().includes(searchTerm) ||
+                                  file.content.toLowerCase().includes(searchTerm) ||
+                                  file.tags.some(tag => tag.toLowerCase().includes(searchTerm));
+
+            const matchesTag = !filterTag || file.tags.some(tag => tag.toLowerCase().includes(filterTag));
+            
+            return matchesSearch && matchesTag;
+        });
+
+        filteredFiles.forEach(file => {
+          fileList.appendChild(createFileItem(file));
+        });
+      }
+
+      function filterFiles(searchTerm = '') {
+          renderFiles();
+      }
+
+      fileForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const name = fileNameInput.value.trim();
+        const content = fileContentInput.value.trim();
+        const uploadedFile = fileUploadInput.files[0];
+        const tags = fileTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+
+        let fileData = '';
+        let fileType = '';
+
+        if (uploadedFile) {
+            fileData = await readFileContent(uploadedFile);
+            fileType = uploadedFile.type;
+            if (!name) fileNameInput.value = uploadedFile.name; // Use uploaded file's name if no name entered
+        } else if (content) {
+            fileData = content;
+            fileType = 'text/plain';
+        }
+
+        if (!name && !uploadedFile) {
+            alert('Bitte geben Sie einen Dateinamen oder laden Sie eine Datei hoch.');
+            return;
+        }
+        if (!fileData) {
+            alert('Bitte geben Sie Dateiinhalt ein oder laden Sie eine Datei hoch.');
+            return;
+        }
+
+        const newFile = {
+          id: Date.now(),
+          name: name || (uploadedFile ? uploadedFile.name : 'Unbenannt'),
+          content: fileData,
+          type: fileType,
+          tags
+        };
+        files.push(newFile);
+        saveFiles();
+        renderFiles();
+        fileForm.reset();
+        document.getElementById('fileFormContent').classList.remove('show');
+        document.getElementById('fileFormHeader').setAttribute('aria-expanded', 'false');
+        document.getElementById('fileFormHeader').querySelector('span').textContent = '▼';
+      });
+
+      fileFilterTag.addEventListener('input', renderFiles);
+
+      // Helper function to read file content
+      function readFileContent(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => resolve(event.target.result);
+          reader.onerror = (error) => reject(error);
+          reader.readAsText(file); // Reads content as text
+        });
+      }
+
+      loadFiles();
+      renderFiles();
+    })();
+  </script>
+</body>
+</html>
